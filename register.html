@@ -154,13 +154,19 @@ async function initiateRegister() {
     }
 }
         async function initiateLogin() {
-            if (window.handleLogin) {
-                await window.handleLogin();
-            } else {
-                alert("Web3 not ready.");
-            }
+    // Button UI update (Optional)
+    try {
+        if (window.handleLogin) {
+            await window.handleLogin();
+        } else {
+            alert("Web3 Handler not loaded properly. Please refresh.");
         }
+    } catch (e) {
+        console.log("Login initiation failed");
+    }
+}
     </script>
 </body>
 </html>
+
 
