@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register | RebirthKey</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Plus+Jakarta+Sans:wght@400;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style1.css"> 
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #010a05; color: white; }
+        .orbitron { font-family: 'Orbitron', sans-serif; }
+        
+        /* Glass Effect */
+        .glass-card { 
+            background: rgba(10, 25, 15, 0.8); 
+            border: 1.5px solid rgba(218, 165, 32, 0.3); 
+            backdrop-filter: blur(15px); 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        .input-field { 
+            background: rgba(0,0,0,0.5); 
+            border: 1px solid rgba(218, 165, 32, 0.2); 
+            padding: 14px; 
+            border-radius: 12px; 
+            width: 100%; 
+            color: #ffd700; 
+            outline: none; 
+            font-family: monospace;
+            transition: 0.3s; 
+        }
+        .input-field:focus { border-color: #ffd700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.1); }
+        
+        /* Gold Button Fix */
+        .gold-btn-main {
+            background: linear-gradient(135deg, #ffd700, #b8860b);
+            color: black !important;
+            padding: 16px;
+            border-radius: 14px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            width: 100%;
+            transition: 0.3s;
+        }
+        .gold-btn-main:hover { transform: scale(1.02); filter: brightness(1.1); }
+        .gold-btn-main:disabled { opacity: 0.5; cursor: not-allowed; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <div class="dots-container">
+        <div class="dots dots-white"></div>
+        <div class="dots dots-cyan"></div>
+    </div>
+
+    <script src="components.js"></script>
+
+    <main class="flex-grow flex items-center justify-center px-6 py-20 relative z-10">
+        <div class="glass-card w-full max-w-md p-10 rounded-[32px] relative">
+            
+            <div class="text-center mb-10">
+                <h1 class="text-3xl font-black orbitron uppercase tracking-tighter mb-2">
+                    Join <span class="text-[#ffd700]">Network</span>
+                </h1>
+                <p class="text-gray-500 text-[10px] tracking-[0.2em] uppercase font-bold">Secure Blockchain Registration</p>
+            </div>
+
+            <div class="space-y-8">
+                <div>
+                    <label class="block text-[10px] font-black text-[#ffd700] uppercase tracking-widest mb-3 ml-1">Referrer Wallet Address</label>
+                    <input type="text" id="reg-referrer" placeholder="0x..." class="input-field" autocomplete="off">
+                    <p id="ref-status" class="text-[9px] mt-3 text-green-500 hidden italic font-bold uppercase tracking-widest">
+                        <span class="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse mr-1"></span> Referral Link Active
+                    </p>
+                </div>
+
+                <button onclick="initiateRegister()" id="reg-btn" class="gold-btn-main orbitron uppercase">
+                    REGISTER NOW
+                </button>
+
+                <div class="pt-4 border-t border-white/5">
+                    <p class="text-center text-[10px] text-gray-500 uppercase tracking-widest font-bold">
+                        Already a member? <a href="#" onclick="initiateLogin()" class="text-[#ffd700] hover:underline">Connect & Login</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="web3-handler.js"></script>
+
+    <script>
+        // Icons initialize
+        if(window.lucide) lucide.createIcons();
+
+        // Referral Auto-fill Logic
+        window.addEventListener('load', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const ref = urlParams.get('ref');
+            const refInput = document.getElementById('reg-referrer');
+
+            if (ref && ethers.utils.isAddress(ref)) {
+                refInput.value = ref; 
+                refInput.readOnly = true; 
+                refInput.style.opacity = "0.7";
+                refInput.style.cursor = "not-allowed";
+                document.getElementById('ref-status').classList.remove('hidden');
+                console.log("Referral auto-filled:", ref);
+            }
+        });
+
+        // Bridge to web3-handler.js
+        // Updated Bridge Function
+async function initiateRegister() {
+    const btn = document.getElementById('reg-btn');
+    const refAddr = document.getElementById('reg-referrer').value.trim();
+
+    // 1. Check Address Format
+    if (!ethers.utils.isAddress(refAddr)) {
+        alert("Please enter a valid BSC Wallet Address (0x...)");
+        return;
+    }
+
+    try {
+        // 2. Agar wallet connect nahi hai, toh pehle connect karwao
+        if (!window.ethereum) {
+            alert("MetaMask/TrustWallet not detected!");
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "CONNECTING...";
+
+        // Accounts request karein
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        window.userAddress = accounts[0]; // Global variable set karein
+
+        if (window.handleRegister) {
+            btn.innerText = "WAITING FOR WALLET...";
+            await window.handleRegister();
+        } else {
+            alert("Web3 Handler missing. Please refresh.");
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Action Cancelled or Error: " + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "REGISTER NOW";
+    }
+}
+        async function initiateLogin() {
+            if (window.handleLogin) {
+                await window.handleLogin();
+            } else {
+                alert("Web3 not ready.");
+            }
+        }
+    </script>
+</body>
+</html>
