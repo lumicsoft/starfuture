@@ -20,11 +20,12 @@ const RANK_DETAILS = [
 // --- ABI (Full Updated for USDT Contract) ---
 const CONTRACT_ABI = [
     "function register(address _referrer) external",
-    "function withdraw(uint256 _amount) external",
-    "function claimReward() external",
+    "function withdraw() external", // Withdraw mein amount nahi chahiye naye contract mein
+    "function claimRewards() external", // Sahi function name claimRewards hai
     "function userStats(address) view returns (uint256 id, address referrer, uint256 totalReferrals, uint256 totalTeam, uint256 totalWithdrawn, uint256 totalRewardClaimed, uint256 lastWithdrawTime, uint8 currentClub)",
     "function userIncomes(address) view returns (uint256 magicIncome, uint256 club1Income, uint256 club2Income, uint256 club3Income, uint256 club4Income, uint256 gtStage1Income, uint256 gtStage2Income, uint256 gtStage3Income, uint256 totalEarned, uint256 availableBalance)",
-    "function rewardFund() view returns (uint256)"
+    "function rewardFund() view returns (uint256)",
+    "function getUserHistory(address _user) view returns (tuple(string txType, uint256 amount, string detail, uint256 timestamp)[])"
 ];
 
 const ERC20_ABI = ["function approve(address spender, uint256 amount) public returns (bool)", "function allowance(address owner, address spender) public view returns (uint256)"];
@@ -217,7 +218,8 @@ window.handleLogin = async function() {
         contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
         localStorage.removeItem('manualLogout');
         
-        const userData = await contract.users(userAddress);
+        // FIX: users ki jagah userStats use karein
+        const userData = await contract.userStats(userAddress);
         if (userData.id.gt(0)) {
             if(typeof showLogoutIcon === "function") showLogoutIcon(userAddress);
             window.location.href = "index1.html";
@@ -489,44 +491,27 @@ async function fetchLeadershipData(address) {
         const activeContract = window.contract || contract;
         if (!activeContract) return;
 
-        const [user, extra] = await Promise.all([
-            activeContract.users(address), 
-            activeContract.usersExtra(address)
+        // Naye contract mein stats aur incomes se hi data milega
+        const [stats, incomes] = await Promise.all([
+            activeContract.userStats(address), 
+            activeContract.userIncomes(address)
         ]);
 
-        const teamActiveVol = parseFloat(ethers.utils.formatUnits(user.teamActiveDeposit, 18));
-        const teamTotalVol = parseFloat(ethers.utils.formatUnits(user.teamTotalDeposit, 18));
-        const rankRewards = parseFloat(ethers.utils.formatUnits(extra.rewardsRank, 18));
+        // Naye contract ke variable names ke hisaab se update
+        updateText('current-team-count', stats.totalTeam.toString());
+        updateText('directs-count', stats.totalReferrals.toString());
+        updateText('rank-reward-claimed', format(stats.totalRewardClaimed));
+        updateText('available-balance-leader', format(incomes.availableBalance));
 
-        updateText('team-active-deposit', teamActiveVol.toFixed(2));
-        updateText('team-total-deposit', teamTotalVol.toFixed(2));
-        updateText('rank-reward-available', rankRewards.toFixed(2));
-        updateText('current-team-count', extra.teamCount);
-        updateText('directs-quali', extra.directsQuali);
-        updateText('current-team-volume', teamActiveVol.toFixed(0));
+        // Club Status dikhane ke liye
+        const clubName = getClubName(stats.currentClub);
+        updateText('current-rank-display', clubName);
 
-        if (typeof updateRankUI === "function") {
-            updateRankUI(extra, teamActiveVol);
-        }
     } catch (err) { 
         console.error("Leadership Data Error:", err); 
     }
+}
 
-}
-function start8HourCountdown() {
-    const timerElement = document.getElementById('next-timer');
-    if (!timerElement) return;
-    setInterval(() => {
-        const now = new Date();
-        const eightHoursInMs = 8 * 60 * 60 * 1000;
-        const nextTarget = Math.ceil(now.getTime() / eightHoursInMs) * eightHoursInMs;
-        const diff = nextTarget - now.getTime();
-        const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
-        const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
-        const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
-        timerElement.innerText = `${h}:${m}:${s}`;
-    }, 1000);
-}
 
 
 function updateNavbar(addr) {
@@ -535,6 +520,7 @@ function updateNavbar(addr) {
 }
 
 window.addEventListener('load', init);
+
 
 
 
