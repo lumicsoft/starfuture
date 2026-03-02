@@ -4,6 +4,7 @@ let provider, signer, contract;
 const CONTRACT_ADDRESS = "0x9bDEC6D06A695B1981280B201A841bD27EF9a36e"; 
 const USDT_TOKEN_ADDRESS = "0x3b66b1e08f55af26c8ea14a73da64b6bc8d799de"; // BSC USDT
 const TESTNET_CHAIN_ID = 97; 
+const REGISTRATION_FEE = "15";
 
 // --- RANK CONFIG (Star1 to Master King) ---
 const RANK_DETAILS = [
@@ -520,6 +521,7 @@ function updateNavbar(addr) {
 }
 
 window.addEventListener('load', init);
+
 
 
 
