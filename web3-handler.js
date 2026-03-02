@@ -76,68 +76,90 @@ async function init() {
 
 
 // --- CORE LOGIC ---
+// --- FINAL REGISTRATION FUNCTION (HTML Synced) ---
 window.handleRegister = async function() {
+    // 1. Aapke HTML ke mutabiq IDs
     const regBtn = document.getElementById('register-btn');
-    const urlParams = new URLSearchParams(window.location.search);
-    let referrer = urlParams.get('ref') || "0x0000000000000000000000000000000000000000"; 
+    const refInput = document.getElementById('reg-referrer');
+    
+    // Referrer address nikalna
+    let referrer = refInput ? refInput.value.trim() : "";
+    
+    // Agar input khali hai ya galat address hai, toh zero address (Admin) use hoga
+    if (!referrer || !ethers.utils.isAddress(referrer)) {
+        referrer = "0x0000000000000000000000000000000000000000";
+    }
 
     try {
-        // --- 1. NETWORK AUTO-SWITCH (BSC Testnet: 97) ---
+        // 2. Network Check (BSC Testnet: 97)
         const network = await provider.getNetwork();
         if (network.chainId !== 97) {
             try {
                 await window.ethereum.request({
                     method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: '0x61' }], // 0x61 = 97
+                    params: [{ chainId: '0x61' }], // 97 in Hex
                 });
             } catch (switchError) {
-                // Agar network add nahi hai wallet mein (Error Code 4902)
-                if (switchError.code === 4902) {
-                    alert("BSC Testnet is not added to your wallet. Please add it manually.");
-                } else {
-                    alert("Please switch your wallet to BSC Testnet manually!");
-                }
+                alert("Please switch your wallet to BSC Testnet manually!");
                 return;
             }
         }
 
-        regBtn.disabled = true;
-        regBtn.innerText = "APPROVING USDT...";
+        // 3. UI Status Update
+        if(regBtn) {
+            regBtn.disabled = true;
+            regBtn.innerText = "CHECKING USDT...";
+        }
 
-        const usdt = new ethers.Contract(USDT_TOKEN_ADDRESS, ERC20_ABI, signer);
-        const feeWei = ethers.utils.parseUnits(REGISTRATION_FEE, 18);
+        // 4. USDT Approval Logic
+        // REGISTRATION_FEE upar define honi chahiye, e.g., const REGISTRATION_FEE = "10";
+        const usdtContract = new ethers.Contract(USDT_TOKEN_ADDRESS, ERC20_ABI, signer);
+        const feeWei = ethers.utils.parseUnits(REGISTRATION_FEE || "10", 18);
         const userAddr = await signer.getAddress();
 
-        // --- 2. USDT APPROVAL CHECK ---
-        const allowance = await usdt.allowance(userAddr, CONTRACT_ADDRESS);
+        // Check allowance
+        const allowance = await usdtContract.allowance(userAddr, CONTRACT_ADDRESS);
+        
         if (allowance.lt(feeWei)) {
-            const appTx = await usdt.approve(CONTRACT_ADDRESS, ethers.constants.MaxUint256);
+            if(regBtn) regBtn.innerText = "APPROVING USDT...";
+            // Unlimited approval taaki user ko baar-baar approve na karna pade
+            const appTx = await usdtContract.approve(CONTRACT_ADDRESS, ethers.constants.MaxUint256);
             await appTx.wait();
         }
 
-        // --- 3. REGISTER WITH GAS LIMIT ---
-        regBtn.innerText = "ACTIVATING...";
-        console.log("Registering with Referrer:", referrer);
+        // 5. Smart Contract Call
+        if(regBtn) regBtn.innerText = "CONFIRMING...";
+        console.log("Registering via Referrer:", referrer);
 
+        // register function ko call karna
         const tx = await contract.register(referrer, {
-            gasLimit: 500000 // Heavy calculations ke liye enough gas
+            gasLimit: 800000 // Matrix calculations ke liye safe limit
         });
 
-        regBtn.innerText = "CONFIRMING...";
+        if(regBtn) regBtn.innerText = "TRANSACTION MINING...";
         await tx.wait();
 
+        // 6. Success
         alert("Account Activated Successfully!");
-        location.reload();
+        window.location.href = "index1.html";
 
     } catch (err) {
         console.error("Register Error:", err);
-        regBtn.disabled = false;
-        regBtn.innerText = "ACTIVATE ACCOUNT";
-
+        
+        let errorMsg = err.reason || err.message || "Transaction Failed";
+        
         if (err.code === 4001) {
-            alert("Transaction rejected by user.");
-        } else {
-            alert("Error: " + (err.reason || err.message || "Execution Reverted"));
+            errorMsg = "User rejected the transaction.";
+        } else if (errorMsg.includes("Referrer")) {
+            errorMsg = "Referrer is not active. Use a valid referrer or Admin address.";
+        }
+
+        alert("Registration Error: " + errorMsg);
+
+        // Error aane par button wapas normal karna
+        if(regBtn) {
+            regBtn.disabled = false;
+            regBtn.innerText = "REGISTER NOW";
         }
     }
 };
@@ -208,28 +230,56 @@ window.handleClaimRewards = async function() {
         claimBtn.disabled = false;
     }
 };
+// --- FINAL LOGIN FUNCTION ---
 window.handleLogin = async function() {
     try {
-        if (!window.ethereum) return alert("Please install MetaMask!");
+        // 1. Check if Wallet is installed
+        if (!window.ethereum) {
+            alert("MetaMask/Trust Wallet not detected!");
+            return;
+        }
+
+        // 2. Request Accounts (Connect Wallet)
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         const userAddress = accounts[0];
-        
-        // FIX: userStats call karna hai users nahi
+
+        // 3. Network Check (BSC Testnet: 97)
+        const network = await provider.getNetwork();
+        if (network.chainId !== 97) {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0x61' }], // 97 in Hex
+                });
+            } catch (err) {
+                alert("Please switch to BSC Testnet manually!");
+                return;
+            }
+        }
+
+        // 4. Check User Registration Status
+        // Naye contract mein 'userStats' function id return karta hai
         const stats = await contract.userStats(userAddress);
         
+        // ethers.js mein BigNumber hota hai, isliye .gt(0) use kiya hai
         if (stats.id.gt(0)) {
+            // Success: User registered hai
             localStorage.setItem('userAddress', userAddress);
             localStorage.removeItem('manualLogout');
+            
+            // Redirect to Dashboard
             window.location.href = "index1.html";
         } else {
-            alert("This wallet is not registered! Redirecting to Register...");
+            // Fail: User registered nahi hai
+            alert("This wallet address is NOT registered in the system!");
             window.location.href = "register.html";
         }
+
     } catch (err) {
         console.error("Login Error:", err);
-        alert("Login failed! Make sure you are on BSC Testnet.");
+        alert("Login failed: " + (err.reason || err.message || "Unknown Error"));
     }
-}
+};
 
 window.handleLogout = function() {
     if (confirm("Disconnect and Logout?")) {
@@ -517,6 +567,7 @@ function updateNavbar(addr) {
 }
 
 window.addEventListener('load', init);
+
 
 
 
