@@ -3,23 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Global Matrix - Dashboard</title>
+    <title>Ultimate Global Matrix - Pro Max Dashboard</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    
     <link rel="stylesheet" href="style1.css">
 </head>
 <body class="p-4 md:p-10 bg-black text-white">
 
-    <main class="max-w-7xl mx-auto space-y-6">
+    <div id="header-placeholder"></div>
+
+    <main class="max-w-7xl mx-auto space-y-6 mt-20">
         
         <div class="premium-card">
             <div class="inner-content !block">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="space-y-2">
                         <div class="info-row flex justify-between border-b border-white/5 py-2">
-                            <div class="flex items-center gap-3"><i data-lucide="wallet" class="text-yellow-600 w-4 h-4"></i><span class="label-text">My Address:</span></div>
-                            <span id="user-address" class="text-xs font-mono text-blue-300 truncate w-48 text-right">Connect Wallet</span>
+                            <div class="flex items-center gap-3"><i data-lucide="user" class="text-yellow-600 w-4 h-4"></i><span class="label-text">User Name:</span></div>
+                            <span id="username-display" class="text-sm font-bold uppercase orbitron text-yellow-500">loading</span>
+                        </div>
+                        <div class="info-row flex justify-between border-b border-white/5 py-2">
+                            <div class="flex items-center gap-3"><i data-lucide="wallet" class="text-yellow-600 w-4 h-4"></i><span class="label-text">Address:</span></div>
+                            <span id="user-address" class="text-xs font-mono text-blue-300 truncate w-48 text-right">loading</span>
                         </div>
                         <div class="info-row flex justify-between border-b border-white/5 py-2">
                             <div class="flex items-center gap-3"><i data-lucide="crown" class="text-yellow-600 w-4 h-4"></i><span class="label-text">Current Club:</span></div>
@@ -27,9 +35,9 @@
                         </div>
                     </div>
                     <div class="flex flex-col justify-center bg-black/40 p-5 rounded-2xl border border-white/5">
-                        <p class="label-text text-center mb-3">Your Referral Link</p>
+                        <p class="label-text text-center mb-3">Referral Link</p>
                         <div class="flex items-center bg-black border border-white/10 rounded-xl p-1.5 pl-4">
-                            <input id="refURL" type="text" readonly value="Connect to see link" class="bg-transparent border-none outline-none w-full text-xs font-mono text-gray-400">
+                            <input id="refURL" type="text" readonly value="loading" class="bg-transparent border-none outline-none w-full text-xs font-mono text-gray-400">
                             <button onclick="copyLink()" class="btn-gold-pro px-6 py-2 rounded-lg text-[10px]">Copy</button>
                         </div>
                     </div>
@@ -37,66 +45,70 @@
             </div>
         </div>
 
-        <div class="premium-card">
+        <div class="premium-card" id="activation-section">
             <div class="inner-content flex flex-col gap-6 p-6">
                 <div class="flex items-center gap-4">
                     <div class="p-3 bg-yellow-600/20 rounded-lg border border-yellow-600/30">
-                        <i data-lucide="user-plus" class="text-yellow-500 w-6 h-6"></i>
+                        <i data-lucide="zap" class="text-yellow-500 w-6 h-6"></i>
                     </div>
                     <div>
-                        <p class="label-text">Join Global Matrix</p>
-                        <p class="text-[10px] text-gray-500 uppercase">Registration Fee: 15 USDT</p>
+                        <p class="label-text">Activate Global Matrix</p>
+                        <p class="text-[10px] text-gray-500 uppercase">Cost: 15 USDT | Status: <span id="main-status-text" class="text-red-500 font-bold">INACTIVE</span></p>
                     </div>
                 </div>
+
                 <div class="flex flex-col md:flex-row items-center gap-3 w-full">
                     <div class="deposit-input-field w-full md:flex-1 flex items-center px-4 py-3 bg-white/5 rounded-xl border border-white/10">
                         <span class="text-yellow-500 font-bold mr-2">15</span> <span class="text-gray-400 text-xs uppercase">USDT</span>
                     </div>
-                    <button id="register-btn" onclick="handleRegister()" class="btn-gold-pro px-8 py-3 rounded-xl text-xs orbitron whitespace-nowrap w-full md:w-auto">Activate Account</button>
+                    <button id="register-btn" onclick="handleRegister()" class="btn-gold-pro px-8 py-3 rounded-xl text-xs orbitron whitespace-nowrap w-full md:w-auto">Activate Now</button>
                 </div>
             </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
             <div class="premium-card"><div class="inner-content stat-box p-5 text-center">
-                <p class="label-text opacity-60 uppercase text-[10px] tracking-widest mb-1">Total Team</p>
+                <div class="flex justify-center mb-2"><i data-lucide="users" class="text-blue-500 w-5 h-5"></i></div>
+                <p class="label-text opacity-60 uppercase text-[10px] tracking-widest">Total Team</p>
                 <h4 id="team-count" class="text-2xl font-black orbitron">0</h4>
             </div></div>
             <div class="premium-card"><div class="inner-content stat-box p-5 text-center">
-                <p class="label-text opacity-60 uppercase text-[10px] tracking-widest mb-1">Direct Referrals</p>
+                <div class="flex justify-center mb-2"><i data-lucide="user-plus" class="text-purple-500 w-5 h-5"></i></div>
+                <p class="label-text opacity-60 uppercase text-[10px] tracking-widest">Direct Referrals</p>
                 <h4 id="directs-count" class="text-2xl font-black orbitron">0</h4>
             </div></div>
             <div class="premium-card"><div class="inner-content stat-box p-5 text-center">
-                <p class="label-text opacity-60 uppercase text-[10px] tracking-widest mb-1">Total Earned</p>
+                <div class="flex justify-center mb-2"><i data-lucide="trending-up" class="text-green-500 w-5 h-5"></i></div>
+                <p class="label-text opacity-60 uppercase text-[10px] tracking-widest">Total Earned</p>
                 <h4 class="text-2xl font-black orbitron text-green-500">$<span id="total-earned">0.00</span></h4>
             </div></div>
         </div>
 
         <div class="premium-card">
             <div class="inner-content !block p-6">
-                <h3 class="text-xs font-black orbitron mb-6 uppercase italic text-yellow-500 tracking-widest flex items-center gap-2">
-                    <i data-lucide="grid" class="w-4 h-4"></i> Global Matrix Incomes
+                <h3 class="text-xs font-black orbitron mb-6 uppercase text-yellow-500 tracking-widest flex items-center gap-2">
+                    <i data-lucide="grid" class="w-4 h-4"></i> Global Matrix Income Sources
                 </h3>
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    <div class="bg-white/5 p-4 rounded-xl border border-white/5 text-center">
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
+                    <div class="bg-white/5 p-4 rounded-xl border border-white/5">
                         <p class="text-[9px] uppercase text-gray-400">Direct/Magic</p>
-                        <p id="income-magic" class="font-bold orbitron text-sm">$0</p>
+                        <p id="income-magic" class="font-bold orbitron text-sm">$0.00</p>
                     </div>
-                    <div class="bg-white/5 p-4 rounded-xl border border-white/5 text-center">
+                    <div class="bg-white/5 p-4 rounded-xl border border-white/5">
                         <p class="text-[9px] uppercase text-gray-400">Club 1</p>
-                        <p id="income-club1" class="font-bold orbitron text-sm">$0</p>
+                        <p id="income-club1" class="font-bold orbitron text-sm">$0.00</p>
                     </div>
-                    <div class="bg-white/5 p-4 rounded-xl border border-white/5 text-center">
+                    <div class="bg-white/5 p-4 rounded-xl border border-white/5">
                         <p class="text-[9px] uppercase text-gray-400">Club 2</p>
-                        <p id="income-club2" class="font-bold orbitron text-sm">$0</p>
+                        <p id="income-club2" class="font-bold orbitron text-sm">$0.00</p>
                     </div>
-                    <div class="bg-white/5 p-4 rounded-xl border border-white/5 text-center">
+                    <div class="bg-white/5 p-4 rounded-xl border border-white/5">
                         <p class="text-[9px] uppercase text-gray-400">Club 3</p>
-                        <p id="income-club3" class="font-bold orbitron text-sm">$0</p>
+                        <p id="income-club3" class="font-bold orbitron text-sm">$0.00</p>
                     </div>
-                    <div class="bg-white/5 p-4 rounded-xl border border-white/5 text-center">
+                    <div class="bg-white/5 p-4 rounded-xl border border-white/5">
                         <p class="text-[9px] uppercase text-gray-400">Club 4</p>
-                        <p id="income-club4" class="font-bold orbitron text-sm">$0</p>
+                        <p id="income-club4" class="font-bold orbitron text-sm">$0.00</p>
                     </div>
                 </div>
             </div>
@@ -115,24 +127,28 @@
                 <p class="text-[10px] text-pink-400 font-bold uppercase">GT Stage 3</p>
                 <h3 class="text-xl font-black orbitron">$<span id="income-gt3">0.00</span></h3>
             </div></div>
-            <div class="premium-card"><div class="inner-content p-5 bg-yellow-600/10 rounded-2xl border border-yellow-500/20">
+            <div class="premium-card border-yellow-500/50"><div class="inner-content p-5 bg-yellow-600/10 rounded-2xl border border-yellow-500/20">
                 <p class="text-[10px] text-yellow-500 font-bold uppercase">Total Rewards</p>
                 <h3 class="text-xl font-black orbitron">$<span id="income-reward">0.00</span></h3>
             </div></div>
         </div>
 
         <div class="premium-card">
-            <div class="inner-content !block py-10 px-6 text-center">
+            <div class="inner-content !block py-12 px-6 text-center relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4">
+                    <span id="status-badge" class="px-4 py-1 rounded-full bg-yellow-500/20 text-yellow-500 text-[10px] font-black border border-yellow-500/30 uppercase">● Wallet Connected</span>
+                </div>
+                
                 <p class="label-text tracking-[8px] mb-3 opacity-60 uppercase text-xs">Withdrawable Balance</p>
                 <h3 class="text-5xl font-black orbitron text-white mb-8">$<span id="available-balance">0.00</span></h3>
                 
                 <div class="max-w-md mx-auto space-y-4">
-                    <input type="number" id="withdraw-amount" placeholder="Enter USDT Amount" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-center orbitron text-white">
-                    <div class="flex gap-4">
-                        <button onclick="handleWithdraw()" class="btn-gold-pro flex-1 py-4 rounded-xl orbitron text-xs font-bold uppercase">Withdraw Now</button>
-                        <button onclick="handleClaimReward()" class="btn-outline-pro flex-1 py-4 rounded-xl orbitron text-xs border-yellow-500/30 text-yellow-500 uppercase">Claim Reward</button>
+                    <input type="number" id="withdraw-amount" placeholder="Enter USDT Amount" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-center orbitron text-white outline-none focus:border-yellow-500 transition-all">
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <button onclick="handleWithdraw()" class="btn-gold-pro flex-1 py-4 rounded-xl orbitron text-xs font-bold uppercase">Withdraw Profit</button>
+                        <button onclick="handleClaimReward()" class="btn-outline-pro flex-1 py-4 rounded-xl orbitron text-xs border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/10 uppercase">Claim Reward</button>
                     </div>
-                    <p class="text-[9px] text-gray-500 italic">10% Admin fee applicable on every withdrawal. Reward Fund must be sufficient.</p>
+                    <p class="text-[9px] text-gray-500 italic">10% Admin fee applicable. Ensure Reward Fund is sufficient.</p>
                 </div>
             </div>
         </div>
@@ -140,36 +156,58 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div class="premium-card"><div class="inner-content p-6 flex justify-between items-center bg-black/40">
                 <div>
-                    <p class="text-gray-400 text-xs uppercase">Total Withdrawn</p>
-                    <h3 class="text-xl font-black orbitron">$<span id="total-withdrawn">0.00</span></h3>
+                    <p class="text-gray-400 text-xs uppercase tracking-widest mb-1">Total Paid Out</p>
+                    <h3 class="text-xl font-black orbitron text-red-400">$<span id="total-withdrawn">0.00</span></h3>
                 </div>
-                <i data-lucide="external-link" class="text-red-500 w-8 h-8 opacity-30"></i>
+                <div class="p-3 bg-red-500/10 rounded-full border border-red-500/20">
+                    <i data-lucide="external-link" class="text-red-500 w-6 h-6"></i>
+                </div>
             </div></div>
             <div class="premium-card"><div class="inner-content p-6 flex justify-between items-center bg-black/40">
                 <div>
-                    <p class="text-gray-400 text-xs uppercase">Reward Fund Pool</p>
-                    <h3 class="text-xl font-black orbitron">$<span id="reward-fund">0.00</span></h3>
+                    <p class="text-gray-400 text-xs uppercase tracking-widest mb-1">Global Reward Pool</p>
+                    <h3 class="text-xl font-black orbitron text-yellow-500">$<span id="reward-fund">0.00</span></h3>
                 </div>
-                <i data-lucide="shield-check" class="text-yellow-500 w-8 h-8 opacity-30"></i>
+                <div class="p-3 bg-yellow-500/10 rounded-full border border-yellow-500/20">
+                    <i data-lucide="shield-check" class="text-yellow-500 w-6 h-6"></i>
+                </div>
             </div></div>
         </div>
 
     </main>
 
+    <div id="footer-placeholder"></div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <script src="components.js"></script>
     <script src="web3-handler.js"></script>
     
     <script>
-        lucide.createIcons();
+        // Copy Referral Link
         function copyLink() {
             const refInput = document.getElementById('refURL');
-            if(refInput.value.includes("0x")) {
+            if(refInput.value !== "loading") {
                 navigator.clipboard.writeText(refInput.value);
                 alert("Referral Link Copied!");
             } else {
-                alert("Please connect wallet first");
+                alert("Wallet not connected!");
             }
         }
+
+        // Initialize Icons
+        lucide.createIcons();
+
+        // Optional: Update status badge based on activation
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const statusBadge = document.getElementById('status-badge');
+                const mainStatus = document.getElementById('main-status-text');
+                if(mainStatus && mainStatus.innerText === "ACTIVE") {
+                    statusBadge.innerHTML = "● Active Account";
+                    statusBadge.className = "px-4 py-1 rounded-full bg-green-500/20 text-green-500 text-[10px] font-black border border-green-500/30 uppercase";
+                }
+            }, 3000);
+        });
     </script>
 </body>
 </html>
