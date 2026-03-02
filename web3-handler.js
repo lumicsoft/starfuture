@@ -211,21 +211,18 @@ window.handleClaimRewards = async function() {
 window.handleLogin = async function() {
     try {
         if (!window.ethereum) return alert("Please install MetaMask!");
-        const accounts = await provider.send("eth_requestAccounts", []);
-        if (accounts.length === 0) return;
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const userAddress = accounts[0];
         
-        const userAddress = accounts[0]; 
-        signer = provider.getSigner();
-        contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-        localStorage.removeItem('manualLogout');
+        // FIX: userStats call karna hai users nahi
+        const stats = await contract.userStats(userAddress);
         
-        // FIX: users ki jagah userStats use karein
-        const userData = await contract.userStats(userAddress);
-        if (userData.id.gt(0)) {
-            if(typeof showLogoutIcon === "function") showLogoutIcon(userAddress);
+        if (stats.id.gt(0)) {
+            localStorage.setItem('userAddress', userAddress);
+            localStorage.removeItem('manualLogout');
             window.location.href = "index1.html";
         } else {
-            alert("This wallet is not registered!");
+            alert("This wallet is not registered! Redirecting to Register...");
             window.location.href = "register.html";
         }
     } catch (err) {
@@ -233,7 +230,6 @@ window.handleLogin = async function() {
         alert("Login failed! Make sure you are on BSC Testnet.");
     }
 }
-
 
 window.handleLogout = function() {
     if (confirm("Disconnect and Logout?")) {
@@ -521,6 +517,7 @@ function updateNavbar(addr) {
 }
 
 window.addEventListener('load', init);
+
 
 
 
