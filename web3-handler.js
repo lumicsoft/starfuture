@@ -265,37 +265,42 @@ async function setupApp(address) {
             }
         }
         
-        const userData = await contract.users(address);
-        const isRegistered = userData.id.gt(0);
+        // Naye contract mein userStats check karega
+        const userData = await contract.userStats(address);
+        const isRegistered = userData.id.gt(0); 
         const path = window.location.pathname;
 
+        window.userData = window.userData || {};
         window.userData.isRegistered = isRegistered;
 
-    // Registration Logic
-    if (!userData.registered) {
-        if (!path.includes('register.html') && !path.includes('login.html')) {
-            window.location.href = "register.html"; 
-            return; 
+        // Registration Redirection Logic
+        if (!isRegistered) {
+            if (!path.includes('register.html') && !path.includes('login.html')) {
+                window.location.href = "register.html"; 
+                return; 
+            }
+        } else {
+            if (path.includes('register.html') || path.includes('login.html') || path.endsWith('/') || path.endsWith('index.html')) {
+                window.location.href = "index1.html";
+                return;
+            }
         }
-    } else {
-        if (path.includes('register.html') || path.includes('login.html') || path.endsWith('/') || path.endsWith('index.html')) {
-            window.location.href = "index1.html";
-            return;
+
+        updateNavbar(address);
+        showLogoutIcon(address); 
+
+        if (path.includes('index1.html')) {
+            setTimeout(() => fetchAllData(address), 300);
+            start8HourCountdown(); 
         }
-    }
-
-    updateNavbar(address);
-    showLogoutIcon(address); 
-
-    if (path.includes('index1.html')) {
-        setTimeout(() => fetchAllData(address), 300);
-        start8HourCountdown(); 
-    }
-    if (path.includes('leadership.html')) {
-        setTimeout(() => fetchLeadershipData(address), 300);
-    }
-    if (path.includes('history.html')) {
-        setTimeout(() => window.showHistory('deposit'), 300);
+        if (path.includes('leadership.html')) {
+            setTimeout(() => fetchLeadershipData(address), 300);
+        }
+        if (path.includes('history.html')) {
+            setTimeout(() => window.showHistory('deposit'), 300);
+        }
+    } catch (err) {
+        console.error("Setup Error:", err);
     }
 }
 
@@ -386,82 +391,98 @@ window.fetchBlockchainHistory = async function(allowedTypes) {
 }
 async function fetchAllData(address) {
     try {
-        // --- TRUST WALLET CONNECTION FIX ---
-        
         const activeContract = window.contract || contract;
-        
         if (!activeContract) {
             console.error("Contract not ready yet!");
             return;
         }
 
-    
-        const [user, extra, live] = await Promise.all([
-            activeContract.users(address), 
-            activeContract.usersExtra(address), 
-            activeContract.getLiveBalance(address)
+        // 1. Naye Contract ke functions se data fetch karna
+        // userStats -> basic info, userIncomes -> saari earning details
+        const [stats, incomes, pool] = await Promise.all([
+            activeContract.userStats(address), 
+            activeContract.userIncomes(address), 
+            activeContract.rewardFund()
         ]);
 
-        // --- DASHBOARD BASIC DATA ---
-        updateText('username-display', user.username || "USER"); 
+        // --- 2. BASIC INFO & ADDRESS ---
         updateText('user-address', address.substring(0, 6) + "..." + address.substring(38));
-        updateText('total-deposit', format(user.totalDeposited));
-        updateText('active-deposit', format(user.totalActiveDeposit));
-        updateText('total-earned', format(user.totalEarnings));
-        updateText('total-withdrawn', format(user.totalWithdrawn));
+        updateText('username-display', "ID: " + stats.id.toString());
+        updateText('rank-display', getClubName(stats.currentClub));
+
+        // --- 3. MAIN STATS (Cards) ---
+        updateText('team-count', stats.totalTeam.toString());
+        updateText('directs-count', stats.totalReferrals.toString());
+        updateText('total-earned', format(incomes.totalEarned));
+        updateText('available-balance', format(incomes.availableBalance));
+        updateText('withdrawable', format(incomes.availableBalance)); // Withdraw section ke liye
+        updateText('total-withdrawn', format(stats.totalWithdrawn));
+        updateText('reward-fund', format(pool));
+
+        // --- 4. INCOME BREAKDOWN (Specific Sections) ---
+        updateText('income-magic', format(incomes.magicIncome));
+        updateText('income-club1', format(incomes.club1Income));
+        updateText('income-club2', format(incomes.club2Income));
+        updateText('income-club3', format(incomes.club3Income));
+        updateText('income-club4', format(incomes.club4Income));
         
-        // Income breakdown display
-        updateText('level-earning', format(extra.totalEarnedLevel)); 
-        updateText('rank-earning', format(extra.totalEarnedRank)); 
- updateText('roi-earning', format(extra.totalEarnedROI)); 
-        // --- THE ULTIMATE FIX ---
-        const totalWithdrawable = parseFloat(format(live));
-        const activeAmt = parseFloat(format(user.totalActiveDeposit));
+        // --- 5. GT STAGES & REWARDS ---
+        updateText('income-gt1', format(incomes.gtStage1Income));
+        updateText('income-gt2', format(incomes.gtStage2Income));
+        updateText('income-gt3', format(incomes.gtStage3Income));
+        updateText('income-reward', format(stats.totalRewardClaimed));
 
-        // UI Updates - Direct live value use (SAME LOGIC)
-        updateText('withdrawable', totalWithdrawable.toFixed(2));    
-        updateText('compounding-balance', totalWithdrawable.toFixed(2));
-        updateText('cap-balance', format(user.totalActiveDeposit));
-        updateText('active-deposit-cp', format(user.totalActiveDeposit));
-        
-updateText('roi-earning', format(extra.totalEarnedROI)); 
-updateText('team-count', extra.teamCount || "0");         
-updateText('directs-count', extra.directsCount || "0");   
-
-        // Daily ROI Projection (0.9%)
-        updateText('projected-return', (activeAmt * 0.009).toFixed(2));
-
-        // --- RANK & STATUS ---
-        // getRankName ko bhi activeContract se call kar rahe hain (Fix for Trust Wallet)
-        const rankName = await activeContract.getRankName(extra.rank);
-        updateText('rank-display', rankName);
-
-        const statusText = document.getElementById('main-status-text');
-        const statusBadge = document.getElementById('status-badge');
-        
-        if (activeAmt > 0) {
-            if(statusText) { statusText.innerText = "ACTIVE"; statusText.className = "text-xs font-black orbitron text-green-500"; }
-            if(statusBadge) { 
-                statusBadge.innerHTML = "● Active Status"; 
-                statusBadge.className = "px-4 py-1 rounded-full bg-green-500/20 text-green-500 text-[10px] font-black border border-green-500/30 uppercase"; 
-            }
-        } else {
-            if(statusText) { statusText.innerText = "INACTIVE"; statusText.className = "text-xs font-black orbitron text-red-500"; }
-            if(statusBadge) {
-                statusBadge.innerHTML = "● Inactive";
-                statusBadge.className = "px-4 py-1 rounded-full bg-red-500/20 text-red-500 text-[10px] font-black border border-red-500/30 uppercase";
-            }
-        }
-
-        // --- REFERRAL URL ---
+        // --- 6. REFERRAL URL LOGIC ---
         const baseUrl = window.location.origin + window.location.pathname.replace('index1.html', 'register.html');
         const refField = document.getElementById('refURL');
-        if(refField) refField.value = `${baseUrl}?ref=${user.username}`;
+        if(refField) refField.value = `${baseUrl}?ref=${address}`;
+
+        // --- 7. BUTTON STATES (If on Register/Login Page) ---
+        if (stats.id.gt(0)) {
+            const regBtn = document.getElementById('register-btn');
+            if(regBtn) {
+                regBtn.innerText = "ALREADY ACTIVE";
+                regBtn.disabled = true;
+                if(regBtn.classList.contains('btn-gold-pro')) {
+                    regBtn.classList.replace('btn-gold-pro', 'bg-green-600/20');
+                }
+            }
+            
+            // Status Badges Update
+            const statusText = document.getElementById('main-status-text');
+            if(statusText) {
+                statusText.innerText = "ACTIVE";
+                statusText.className = "text-xs font-black orbitron text-green-500";
+            }
+        }
 
     } catch (err) { 
         console.error("Data Sync Error:", err); 
     }
 }
+
+// --- UTILS (Inhe fetchAllData ke bahar hi rehne dein) ---
+function getClubName(id) {
+    const clubs = ["NO CLUB", "CLUB 1", "CLUB 2", "CLUB 3", "CLUB 4"];
+    return clubs[id] || "NO CLUB";
+}
+
+const format = (val) => {
+    try { 
+        return parseFloat(ethers.utils.formatUnits(val, 18)).toFixed(2); 
+    } catch (e) { 
+        return "0.00"; 
+    }
+};
+
+const updateText = (id, val) => {
+    const elements = document.querySelectorAll(`[id="${id}"]`); 
+    if(elements.length > 0) {
+        elements.forEach(el => {
+            el.innerText = val; 
+        });
+    }
+};
 // --- LEADERSHIP DATA (Corrected for RPC Mode) ---
 async function fetchLeadershipData(address) {
     try {
@@ -507,21 +528,6 @@ function start8HourCountdown() {
     }, 1000);
 }
 
-// --- UTILS ---
-const format = (val) => {
-    try { return parseFloat(ethers.utils.formatUnits(val, 18)).toFixed(2); }
-    catch { return "0.00"; }
-};
-
-
-const updateText = (id, val) => { 
-    const elements = document.querySelectorAll(`[id="${id}"]`); 
-    if(elements.length > 0) {
-        elements.forEach(el => {
-            el.innerText = val; 
-        });
-    }
-};
 
 function updateNavbar(addr) {
     const btn = document.getElementById('connect-btn');
@@ -529,6 +535,7 @@ function updateNavbar(addr) {
 }
 
 window.addEventListener('load', init);
+
 
 
 
