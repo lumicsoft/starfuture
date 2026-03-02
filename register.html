@@ -78,7 +78,7 @@
                     </p>
                 </div>
 
-                <button onclick="initiateRegister()" id="reg-btn" class="gold-btn-main orbitron uppercase">
+                <button onclick="initiateRegister()" id="register-btn" class="gold-btn-main orbitron uppercase">
                     REGISTER NOW
                 </button>
 
@@ -116,7 +116,7 @@
         // Bridge to web3-handler.js
         // Updated Bridge Function
 async function initiateRegister() {
-    const btn = document.getElementById('reg-btn');
+    const btn = document.getElementById('register-btn');
     const refAddr = document.getElementById('reg-referrer').value.trim();
 
     // 1. Check Address Format
@@ -163,3 +163,4 @@ async function initiateRegister() {
     </script>
 </body>
 </html>
+
