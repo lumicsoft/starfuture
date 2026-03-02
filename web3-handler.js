@@ -82,64 +82,71 @@ async function init() {
 
 
 // --- CORE LOGIC ---
-window.handleDeposit = async function() {
-    const amountInput = document.getElementById('deposit-amount');
-    const depositBtn = document.getElementById('deposit-btn');
-    
-    if (!amountInput || !amountInput.value || amountInput.value < 10) {
-        return alert("Min 10 USDT required!");
-    }
+window.handleRegister = async function() {
+    const regBtn = document.getElementById('register-btn');
+    const urlParams = new URLSearchParams(window.location.search);
+    let referrer = urlParams.get('ref') || "0x0000000000000000000000000000000000000000"; 
 
     try {
-       
-        let activeSigner = window.signer || signer;
-        let activeContract = window.contract || contract;
-
-        
-        if (!activeSigner || !window.ethereum) {
-            if (!window.ethereum) return alert("Please use Trust Wallet or MetaMask browser!");
-            
-            const tempProvider = new ethers.providers.Web3Provider(window.ethereum, "any");
-            await tempProvider.send("eth_requestAccounts", []);
-            activeSigner = tempProvider.getSigner();
-            activeContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, activeSigner);
-                        
-            window.signer = activeSigner;
-            window.contract = activeContract;
+        // --- 1. NETWORK AUTO-SWITCH (BSC Testnet: 97) ---
+        const network = await provider.getNetwork();
+        if (network.chainId !== 97) {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0x61' }], // 0x61 = 97
+                });
+            } catch (switchError) {
+                // Agar network add nahi hai wallet mein (Error Code 4902)
+                if (switchError.code === 4902) {
+                    alert("BSC Testnet is not added to your wallet. Please add it manually.");
+                } else {
+                    alert("Please switch your wallet to BSC Testnet manually!");
+                }
+                return;
+            }
         }
 
-        depositBtn.disabled = true;
-        depositBtn.innerText = "APPROVING...";
+        regBtn.disabled = true;
+        regBtn.innerText = "APPROVING USDT...";
 
-        const amountInWei = ethers.utils.parseUnits(amountInput.value.toString(), 18);
-        const userAddress = await activeSigner.getAddress();
-        
-        const usdt = new ethers.Contract(USDT_TOKEN_ADDRESS, ERC20_ABI, activeSigner);
+        const usdt = new ethers.Contract(USDT_TOKEN_ADDRESS, ERC20_ABI, signer);
+        const feeWei = ethers.utils.parseUnits(REGISTRATION_FEE, 18);
+        const userAddr = await signer.getAddress();
 
-        // 1. Approve Check
-        const allowance = await usdt.allowance(userAddress, CONTRACT_ADDRESS);
-        if (allowance.lt(amountInWei)) {
-            const txApp = await usdt.approve(CONTRACT_ADDRESS, amountInWei);
-            await txApp.wait();
+        // --- 2. USDT APPROVAL CHECK ---
+        const allowance = await usdt.allowance(userAddr, CONTRACT_ADDRESS);
+        if (allowance.lt(feeWei)) {
+            const appTx = await usdt.approve(CONTRACT_ADDRESS, ethers.constants.MaxUint256);
+            await appTx.wait();
         }
 
-        // 2. Deposit
-        depositBtn.innerText = "SIGNING...";
-        const tx = await activeContract.deposit(amountInWei);
-        
-        depositBtn.innerText = "DEPOSITING...";
+        // --- 3. REGISTER WITH GAS LIMIT ---
+        regBtn.innerText = "ACTIVATING...";
+        console.log("Registering with Referrer:", referrer);
+
+        const tx = await contract.register(referrer, {
+            gasLimit: 500000 // Heavy calculations ke liye enough gas
+        });
+
+        regBtn.innerText = "CONFIRMING...";
         await tx.wait();
-        
-        alert("Deposit Successful!");
-        location.reload(); 
+
+        alert("Account Activated Successfully!");
+        location.reload();
 
     } catch (err) {
-        console.error("Deposit Error:", err);
-        alert("Error: " + (err.reason || err.message || "Transaction Failed"));
-        depositBtn.innerText = "DEPOSIT NOW";
-        depositBtn.disabled = false;
+        console.error("Register Error:", err);
+        regBtn.disabled = false;
+        regBtn.innerText = "ACTIVATE ACCOUNT";
+
+        if (err.code === 4001) {
+            alert("Transaction rejected by user.");
+        } else {
+            alert("Error: " + (err.reason || err.message || "Execution Reverted"));
+        }
     }
-}
+};
 
 window.handleWithdraw = async function() {
    
@@ -232,87 +239,7 @@ window.handleLogin = async function() {
     }
 }
 
-window.handleRegister = async function() {
-    const userField = document.getElementById('reg-username');
-    const refField = document.getElementById('reg-referrer');
-    const regBtn = event.target; // Button ko pakadne ke liye
-    
-    if (!userField || !refField) return;
 
-    const username = userField.value.trim();
-    const referrer = refField.value.trim();
-
-    if (!username || !referrer) {
-        alert("Username and Referrer are required!");
-        return;
-    }
-
-    try {
-      
-        let activeSigner = window.signer || signer;
-        let activeContract = window.contract || contract;
-
-        if (!activeSigner || !window.ethereum) {
-            if (!window.ethereum) return alert("Please use Trust Wallet/MetaMask browser!");
-            
-            const tempProvider = new ethers.providers.Web3Provider(window.ethereum, "any");
-            await tempProvider.send("eth_requestAccounts", []);
-            activeSigner = tempProvider.getSigner();
-            activeContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, activeSigner);
-            
-            window.signer = activeSigner;
-            window.contract = activeContract;
-        }
-
-        // ---  NETWORK AUTO-SWITCH (BSC Testnet: 97) ---
-        const network = await activeSigner.provider.getNetwork();
-        if (network.chainId !== 97) {
-            try {
-                await window.ethereum.request({
-                    method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: '0x61' }], // 0x61 = 97
-                });
-            } catch (switchError) {
-                alert("Please switch your wallet to BSC Testnet manually!");
-                return;
-            }
-        }
-
-        regBtn.disabled = true;
-        regBtn.innerText = "CHECKING...";
-
-        
-        console.log("Registering username:", username);
-        
-        // Manual gas limit for Trust Wallet stability
-        const tx = await activeContract.register(username, referrer, {
-            gasLimit: 500000 
-        });
-
-        regBtn.innerText = "CONFIRMING...";
-        console.log("Tx Hash:", tx.hash);
-
-        await tx.wait();
-        
-        
-        localStorage.removeItem('manualLogout');
-        localStorage.setItem('userAddress', await activeSigner.getAddress()); 
-        
-        alert("Registration Successful!");
-        window.location.href = "index1.html";
-
-    } catch (err) { 
-        console.error("Register Error:", err);
-        regBtn.disabled = false;
-        regBtn.innerText = "REGISTER NOW";
-
-        if (err.code === 4001 || err.message.includes("user rejected")) {
-            alert("Transaction rejected by user.");
-        } else {
-            alert("Error: " + (err.reason || "Username might be taken or balance is low."));
-        }
-    }
-}
 window.handleLogout = function() {
     if (confirm("Disconnect and Logout?")) {
        
@@ -610,5 +537,6 @@ function updateNavbar(addr) {
 }
 
 window.addEventListener('load', init);
+
 
 
