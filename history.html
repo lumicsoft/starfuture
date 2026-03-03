@@ -6,13 +6,11 @@
     <title>Tx History | PRO MAX</title>
 
     <link rel="stylesheet" href="style1.css">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <style>
-        /* Specific Styles for History Page */
         .filter-btn {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.08);
@@ -30,7 +28,7 @@
         .history-inner {
             position: relative;
             margin: 2px;
-            background: #080810; /* Matching dashboard panel-bg */
+            background: #080810;
             border-radius: 22px;
             padding: 20px;
             z-index: 2;
@@ -38,9 +36,16 @@
             justify-content: space-between;
             align-items: center;
         }
+
+        .premium-card {
+            position: relative;
+            background: linear-gradient(45deg, rgba(255,215,0,0.1), transparent);
+            border-radius: 24px;
+            padding: 1px;
+        }
     </style>
 </head>
-<body class="pt-28 pb-32">
+<body class="bg-black text-white pt-28 pb-32">
 
     <main class="max-w-4xl mx-auto px-6 relative z-10">
         
@@ -48,20 +53,20 @@
             <h1 class="text-4xl font-black orbitron italic uppercase tracking-tighter">
                 TX <span class="text-yellow-500">HISTORY</span>
             </h1>
-            <p class="text-gray-600 text-[10px] font-bold uppercase tracking-[0.3em] mt-2 italic">Official Contract Ledger</p>
+            <p class="text-gray-600 text-[10px] font-bold uppercase tracking-[0.3em] mt-2 italic">Direct Contract Ledger Sync</p>
         </div>
 
         <div class="flex flex-wrap justify-center gap-3 mb-12">
-            <button onclick="showHistory('deposit')" id="btn-deposit" class="filter-btn active">Deposits</button>
-            <button onclick="showHistory('compounding')" id="btn-compounding" class="filter-btn">Reinvest Capital</button>
-            <button onclick="showHistory('income')" id="btn-income" class="filter-btn">Income</button>
-            <button onclick="showHistory('withdrawal')" id="btn-withdrawal" class="filter-btn">Withdrawals</button>
+            <button onclick="showHistory('all')" id="btn-all" class="filter-btn active">All Trans.</button>
+            <button onclick="showHistory('Income')" id="btn-income" class="filter-btn">Income</button>
+            <button onclick="showHistory('Withdrawal')" id="btn-withdrawal" class="filter-btn">Withdrawals</button>
+            <button onclick="showHistory('Reward')" id="btn-reward" class="filter-btn">Rewards</button>
         </div>
 
         <div id="history-container" class="grid gap-6">
             <div class="text-center py-20 opacity-30">
                 <div class="w-10 h-10 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p class="orbitron text-[10px] tracking-widest uppercase">Syncing Ledger...</p>
+                <p class="orbitron text-[10px] tracking-widest uppercase">Syncing with Blockchain...</p>
             </div>
         </div>
     </main>
@@ -69,109 +74,98 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="components.js"></script>
     <script src="web3-handler.js"></script>
+
     <script>
-   <script>
-    async function showHistory(category) {
-        const container = document.getElementById('history-container');
-        const buttons = document.querySelectorAll('.filter-btn');
-        
-        buttons.forEach(btn => btn.classList.remove('active'));
-        const activeBtn = document.getElementById('btn-' + category);
-        if(activeBtn) activeBtn.classList.add('active');
+        async function showHistory(category) {
+            const container = document.getElementById('history-container');
+            const buttons = document.querySelectorAll('.filter-btn');
+            
+            // UI Switch
+            buttons.forEach(btn => btn.classList.remove('active'));
+            const btnId = category === 'all' ? 'btn-all' : 'btn-' + category.toLowerCase();
+            if(document.getElementById(btnId)) document.getElementById(btnId).classList.add('active');
 
-        container.innerHTML = `<div class="text-center py-20"><p class="orbitron text-[10px] text-gray-600 animate-pulse uppercase tracking-widest">Accessing Blockchain...</p></div>`;
+            if (!window.contract || !window.userAddress) {
+                container.innerHTML = `<div class="text-center py-20 opacity-30 italic">Connect Wallet to View History</div>`;
+                return;
+            }
 
-        try {
-            // --- TRUST WALLET FIX: Signer check ---
-            // Agar window.signer nahi hai, toh check karein window.ethereum hai ya nahi
-            let activeSigner = window.signer;
-            if (!activeSigner && window.ethereum) {
-                const tempProvider = new ethers.providers.Web3Provider(window.ethereum);
-                const accounts = await tempProvider.listAccounts();
-                if (accounts.length > 0) {
-                    activeSigner = tempProvider.getSigner();
+            try {
+                // Seedha contract se mapping data uthana
+                const rawLogs = await window.contract.getUserHistory(window.userAddress);
+                
+                if(!rawLogs || rawLogs.length === 0) {
+                    container.innerHTML = `<div class="text-center py-20 border border-dashed border-white/10 rounded-[40px]"><p class="text-gray-600 text-[10px] font-bold orbitron uppercase tracking-widest">No Transactions Found</p></div>`;
+                    return;
                 }
-            }
 
-            if (!activeSigner) {
-                // Agar abhi bhi nahi hai, toh 1 second baad phir try karein
-                setTimeout(() => showHistory(category), 1000);
-                return;
-            }
+                // Filtering Logic based on item.txType (Income, Withdrawal, Reward, etc.)
+                const filtered = rawLogs.filter(item => {
+                    if (category === 'all') return true;
+                    return item.txType.toLowerCase() === category.toLowerCase();
+                }).reverse(); // Latest First
 
-            const typeMapForBackend = {
-                'deposit': ['DEPOSIT'],
-                'compounding': ['REINVEST'],
-                'withdrawal': ['WITHDRAW', 'PRINCIPAL_WITHDRAW'],
-                'income': ['ROI_INCOME', 'LEVEL_INCOME', 'RANK_INCOME']
-            };
+                if(filtered.length === 0) {
+                    container.innerHTML = `<div class="text-center py-20"><p class="text-gray-600 text-[10px] font-bold orbitron">No ${category} found</p></div>`;
+                    return;
+                }
 
-            // Signer ko fetch function mein pass karein agar zaroorat ho (web3-handler.js ke hisab se)
-            const logs = await window.fetchBlockchainHistory(typeMapForBackend[category]);
+                let html = '';
+                filtered.forEach(item => {
+                    const amount = ethers.utils.formatEther(item.amount);
+                    const date = new Date(item.timestamp.toNumber() * 1000).toLocaleDateString();
+                    const time = new Date(item.timestamp.toNumber() * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    const type = item.txType.toLowerCase();
 
-            if(!logs || logs.length === 0) {
-                container.innerHTML = `<div class="text-center py-20 border border-dashed border-white/5 rounded-[40px]"><p class="text-gray-600 text-[10px] font-bold orbitron uppercase tracking-widest">No ${category} transactions found</p></div>`;
-                return;
-            }
-
-            let html = '';
-            logs.forEach(item => {
-                const isPositive = !item.type.includes('WITHDRAW');
-                const displayType = item.type.replace('_', ' ');
-
-                html += `
-                <div class="premium-card mb-4"> 
-                    <div class="history-inner">
-                        <div class="flex items-center gap-4">
-                            <div class="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10">
-                                <i data-lucide="${getIcon(category)}" class="w-5 h-5 ${isPositive ? 'text-yellow-500' : 'text-red-500'}"></i>
+                    html += `
+                    <div class="premium-card mb-2"> 
+                        <div class="history-inner">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
+                                    <i data-lucide="${getIcon(type)}" class="w-4 h-4 ${type === 'withdrawal' ? 'text-red-500' : 'text-yellow-500'}"></i>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] font-black orbitron text-white uppercase tracking-tighter">${item.txType}</p>
+                                    <p class="text-[9px] font-bold text-gray-500 mt-0.5 uppercase">${item.detail}</p>
+                                    <p class="text-[7px] text-gray-600 mt-0.5">${date} | ${time}</p>
+                                </div>
                             </div>
-                            <div>
-                                <p class="text-[11px] font-black orbitron text-white tracking-tighter uppercase">${displayType}</p>
-                                <p class="text-[9px] font-bold text-gray-400 mt-1 uppercase">${item.detail || ''}</p>
-                                <p class="text-[8px] font-medium text-gray-600 mt-0.5 uppercase">${item.date} | ${item.time}</p>
+                            <div class="text-right">
+                                <div class="text-lg orbitron text-white font-black">
+                                    <span class="text-[10px] text-yellow-600 mr-0.5">$</span>${parseFloat(amount).toFixed(2)}
+                                </div>
+                                <p class="text-[7px] text-gray-700 font-bold uppercase tracking-widest">On-Chain</p>
                             </div>
                         </div>
-                        <div class="text-right">
-                            <div class="text-xl orbitron text-white font-black">
-                                <span class="text-sm text-yellow-600 font-bold mr-0.5">$</span>${item.amount}
-                            </div>
-                            <p class="text-[8px] text-gray-600 font-bold uppercase tracking-[0.2em] mt-1 italic">Verified TX</p>
-                        </div>
-                    </div>
-                </div>`;
-            });
+                    </div>`;
+                });
 
-            container.innerHTML = html;
-            lucide.createIcons();
+                container.innerHTML = html;
+                lucide.createIcons();
 
-        } catch (err) {
-            console.error("History Error:", err);
-            container.innerHTML = `<div class="text-center py-20 text-red-500 orbitron text-[10px]">WEB3 ERROR: RETRYING...</div>`;
-            setTimeout(() => showHistory(category), 2000);
+            } catch (err) {
+                console.error("History Error:", err);
+                container.innerHTML = `<div class="text-center py-20 text-red-800 text-[10px] orbitron">RPC ERROR: RETRYING...</div>`;
+                setTimeout(() => showHistory(category), 3000);
+            }
         }
-    }
 
-    function getIcon(category) {
-        const map = { 'deposit': 'arrow-down-left', 'compounding': 'refresh-cw', 'income': 'trending-up', 'withdrawal': 'external-link' };
-        return map[category] || 'circle';
-    }
+        function getIcon(type) {
+            if(type === 'income') return 'trending-up';
+            if(type === 'withdrawal') return 'external-link';
+            if(type === 'reward') return 'award';
+            return 'arrow-right-circle';
+        }
 
-    // Auto-init on load with better Trust Wallet detection
-    window.addEventListener('load', () => {
-        let retryCount = 0;
-        const checkInit = setInterval(() => {
-            retryCount++;
-            // Check if contract is ready
-            if (window.contract) {
-                showHistory('deposit');
-                clearInterval(checkInit);
-            }
-            // 5 second baad agar nahi hota toh manual call
-            if (retryCount > 10) clearInterval(checkInit);
-        }, 500);
-    });
-</script>
+        // Initialize
+        window.addEventListener('load', () => {
+            const check = setInterval(() => {
+                if(window.contract && window.userAddress) {
+                    showHistory('all');
+                    clearInterval(check);
+                }
+            }, 1000);
+        });
+    </script>
 </body>
-
 </html>
