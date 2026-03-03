@@ -217,7 +217,7 @@ window.handleClaimRewards = async function() {
         claimBtn.innerText = "SIGNING...";
 
       
-        const tx = await contract.claimRewards(); 
+        const tx = await contract.claimReward(); 
         
         claimBtn.innerText = "CLAIMING...";
         console.log("Claim Transaction Hash:", tx.hash);
@@ -455,61 +455,67 @@ async function fetchAllData(address) {
             return;
         }
 
-        // --- 1. CONTRACT SE DATA FETCH KARNA (Optimized for your Contract) ---
-        // Hum contract ke explicitly banaye gaye view functions use karenge
-        const [basic, account, matrix, advanced, fund] = await Promise.all([
-            activeContract.getUserBasicStats(address),    // team, directs, totalEarned
-            activeContract.getUserAccountStats(address),  // currentClub, availableBalance, withdrawn
-            activeContract.getMatrixIncomeReport(address),// dMagic, c1, c2, c3, c4
-            activeContract.getAdvancedIncomeReport(address), // g1, g2, g3, rwd
-            activeContract.rewardFund()
+        // --- 1. PARALLEL DATA FETCHING (Optimized) ---
+        // Hum saare data points ek saath fetch kar rahe hain performance ke liye
+        const [basic, account, matrix, advanced, fund, isRegistered] = await Promise.all([
+            activeContract.getUserBasicStats(address),    // [team, directs, totalEarned]
+            activeContract.getUserAccountStats(address),  // [currentClub, availableBalance, withdrawn]
+            activeContract.getMatrixIncomeReport(address),// [dMagic, c1, c2, c3, c4]
+            activeContract.getAdvancedIncomeReport(address), // [g1, g2, g3, rwd]
+            activeContract.rewardFund(),
+            activeContract.isRegistered(address)
         ]);
 
-        // --- 2. BASIC INFO & ADDRESS ---
-        // Address ko full aur short dono jagah update karenge
-        updateText('user-address', address.substring(0, 6) + "..." + address.substring(38));
-        updateText('full-address', address); // Agar kahin full dikhana ho
+        // --- 2. BASIC PROFILE & ADDRESS ---
+        const shortAddr = address.substring(0, 6) + "..." + address.substring(38);
+        updateText('user-address', shortAddr);
+        updateText('full-address', address);
         updateText('username-display', "ACTIVE USER"); 
-        updateText('rank-display', account.currentClub);
+        updateText('rank-display', account.currentClub || "NO RANK");
 
-        // --- 3. MAIN STATS (Cards) ---
+        // --- 3. MAIN DASHBOARD STATS (Big Cards) ---
         updateText('team-count', basic.team.toString());
         updateText('directs-count', basic.directs.toString());
         updateText('total-earned', format(basic.totalEarned));
         updateText('available-balance', format(account.availableBalance));
-        updateText('withdrawable', format(account.availableBalance)); // Withdraw modal ke liye
+        updateText('withdrawable', format(account.availableBalance)); 
         updateText('total-withdrawn', format(account.withdrawn));
         updateText('reward-fund', format(fund));
 
-        // --- 4. INCOME BREAKDOWN (Matrix) ---
+        // --- 4. MATRIX INCOME BREAKDOWN ---
         updateText('income-magic', format(matrix.dMagic));
         updateText('income-club1', format(matrix.c1));
         updateText('income-club2', format(matrix.c2));
         updateText('income-club3', format(matrix.c3));
         updateText('income-club4', format(matrix.c4));
         
-        // --- 5. GT STAGES & REWARDS ---
+        // --- 5. GLOBAL TEAM (GT) & REWARDS ---
         updateText('income-gt1', format(advanced.g1));
         updateText('income-gt2', format(advanced.g2));
         updateText('income-gt3', format(advanced.g3));
         updateText('income-reward', format(advanced.rwd));
 
-        // --- 6. REFERRAL URL LOGIC ---
-        const baseUrl = window.location.origin + window.location.pathname.replace('index1.html', 'register.html');
+        // --- 6. REFERRAL LINK GENERATION ---
+        // 'index1.html' ko 'register.html' se replace karke referral link banana
+        const currentPath = window.location.pathname;
+        const registerPath = currentPath.includes('index1.html') 
+            ? currentPath.replace('index1.html', 'register.html') 
+            : '/register.html';
+            
+        const baseUrl = window.location.origin + registerPath;
         const refField = document.getElementById('refURL');
         if(refField) {
             refField.value = `${baseUrl}?ref=${address}`;
         }
 
-        // --- 7. UI ENHANCEMENTS (Wallet Status) ---
+        // --- 7. UI STATUS & BUTTON CONTROLS ---
         const statusText = document.getElementById('main-status-text');
         if(statusText) {
             statusText.innerText = "CONNECTED";
             statusText.className = "text-xs font-black orbitron text-green-500";
         }
 
-        // Agar user register hai toh register button disable karna (Login page ke liye)
-        const isRegistered = await activeContract.isRegistered(address);
+        // Agar user already registered hai toh register button ko lock kar dena
         if (isRegistered) {
             const regBtn = document.getElementById('register-btn');
             if(regBtn) {
@@ -521,9 +527,9 @@ async function fetchAllData(address) {
 
     } catch (err) { 
         console.error("Data Sync Error:", err);
-        // CALL_EXCEPTION handle karne ke liye alert (optional)
+        // User ko friendly error dikhana agar network issue ho
         if(err.code === 'CALL_EXCEPTION') {
-            console.log("Please ensure you are on BSC Testnet!");
+            console.warn("RPC Call Failed. Checking network...");
         }
     }
 }
@@ -553,27 +559,15 @@ const updateText = (id, val) => {
 async function fetchLeadershipData(address) {
     try {
         const activeContract = window.contract || contract;
-        if (!activeContract) return;
+        const stats = await activeContract.userStats(address);
+        const incomes = await activeContract.userIncomes(address);
 
-        // Naye contract mein stats aur incomes se hi data milega
-        const [stats, incomes] = await Promise.all([
-            activeContract.userStats(address), 
-            activeContract.userIncomes(address)
-        ]);
-
-        // Naye contract ke variable names ke hisaab se update
         updateText('current-team-count', stats.totalTeam.toString());
         updateText('directs-count', stats.totalReferrals.toString());
         updateText('rank-reward-claimed', format(stats.totalRewardClaimed));
         updateText('available-balance-leader', format(incomes.availableBalance));
-
-        // Club Status dikhane ke liye
-        const clubName = getClubName(stats.currentClub);
-        updateText('current-rank-display', clubName);
-
-    } catch (err) { 
-        console.error("Leadership Data Error:", err); 
-    }
+        updateText('current-rank-display', getClubName(stats.currentClub));
+    } catch (err) { console.error("Leadership Data Error:", err); }
 }
 
 
@@ -584,6 +578,7 @@ function updateNavbar(addr) {
 }
 
 window.addEventListener('load', init);
+
 
 
 
