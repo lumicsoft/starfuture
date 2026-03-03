@@ -318,62 +318,81 @@ async function fetchUserHistory(address) {
 }
 
 async function updateLiveMatrixStatus() {
-    if (!window.contract) return;
-    try {
-        const magicCounts = await window.contract.getMagicPoolCounts();
-        const clubCounts = await window.contract.getClubCounts();
-        const gtCounts = await window.contract.getGTCounts();
+    if (!window.contract) return;
+    try {
+        const magicCounts = await window.contract.getMagicPoolCounts();
+        const clubCounts = await window.contract.getClubCounts();
+        const gtCounts = await window.contract.getGTCounts();
 
-        const magicStages = [
-            { label: "Stage 1", count: magicCounts[0].toNumber(), target: 2 },
-            { label: "Stage 2", count: magicCounts[1].toNumber(), target: 4 },
-            { label: "Stage 3", count: magicCounts[2].toNumber(), target: 8 },
-            { label: "Stage 4", count: magicCounts[3].toNumber(), target: 16 },
-            { label: "Stage 5", count: magicCounts[4].toNumber(), target: 32 },
-           { label: "Stage 6", count: magicCounts[5].toNumber(), target: 64 }
-        ];
-        renderMatrixGroup('magic-pool-status', magicStages, 'blue');
+        // --- MAGIC POOL (Normal 2, 4, 8, 16, 32, 64) ---
+        const magicStages = [
+            { label: "Stage 1", count: magicCounts[0].toNumber(), target: 2 },
+            { label: "Stage 2", count: magicCounts[1].toNumber(), target: 4 },
+            { label: "Stage 3", count: magicCounts[2].toNumber(), target: 8 },
+            { label: "Stage 4", count: magicCounts[3].toNumber(), target: 16 },
+            { label: "Stage 5", count: magicCounts[4].toNumber(), target: 32 },
+            { label: "Stage 6", count: magicCounts[5].toNumber(), target: 64 }
+        ];
+        renderMatrixGroup('magic-pool-status', magicStages, 'blue');
 
-        const clubStages = [
-            { label: "Club 1", count: clubCounts[0].toNumber(), target: 2 },
-            { label: "Club 2", count: clubCounts[1].toNumber(), target: 2 },
-            { label: "Club 3", count: clubCounts[2].toNumber(), target: 2 },
-            { label: "Club 4", count: clubCounts[3].toNumber(), target: 2 }
-        ];
-        renderMatrixGroup('club-status', clubStages, 'yellow');
+        // --- ALL CLUBS (Har Club ki 3 Stages: 2, 4, 8) ---
+        const clubStages = [];
+        const clubNames = ["Club 1", "Club 2", "Club 3", "Club 4"];
+        
+        clubCounts.forEach((count, i) => {
+            const val = count.toNumber();
+            clubStages.push({ label: `${clubNames[i]} S1`, count: val, target: 2 });
+            clubStages.push({ label: `${clubNames[i]} S2`, count: val, target: 4 });
+            clubStages.push({ label: `${clubNames[i]} S3`, count: val, target: 8 });
+        });
+        renderMatrixGroup('club-status', clubStages, 'yellow');
 
-        const gtStages = [
-            { label: "GT 1", count: gtCounts[0].toNumber(), target: 2 },
-           { label: "GT 2", count: gtCounts[1].toNumber(), target: 2 },
-            { label: "GT 3", count: gtCounts[2].toNumber(), target: 2 }
-        ];
-        renderMatrixGroup('gt-status', gtStages, 'purple');
-    } catch (error) { console.error("Live Matrix Update Error:", error); }
+        // --- ALL GT (Har GT ki 2 Stages: 2, 4) ---
+        const gtStages = [];
+        const gtNames = ["GT 1", "GT 2", "GT 3"];
+
+        gtCounts.forEach((count, i) => {
+            const val = count.toNumber();
+            gtStages.push({ label: `${gtNames[i]} S1`, count: val, target: 2 });
+            gtStages.push({ label: `${gtNames[i]} S2`, count: val, target: 4 });
+        });
+        renderMatrixGroup('gt-status', gtStages, 'purple');
+
+    } catch (error) { 
+        console.error("Live Matrix Update Error:", error); 
+    }
 }
 
+// Render function wahi rakha hai jo aapne diya tha
 function renderMatrixGroup(containerId, stages, colorTheme) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    let html = '';
-    const colors = { blue: 'from-blue-600 to-cyan-400', yellow: 'from-yellow-600 to-orange-400', purple: 'from-purple-600 to-pink-400' };
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    let html = '';
+    const colors = { 
+        blue: 'from-blue-600 to-cyan-400', 
+        yellow: 'from-yellow-600 to-orange-400', 
+        purple: 'from-purple-600 to-pink-400' 
+    };
 
-    stages.forEach(s => {
-        let currentLevelFill = s.count % s.target;
-        if (s.count > 0 && currentLevelFill === 0) currentLevelFill = s.target; 
-        const percentage = (currentLevelFill / s.target) * 100;
-        html += `
-            <div class="mb-4">
-                <div class="flex justify-between text-[11px] orbitron mb-1">
-                    <span class="text-gray-400 uppercase font-bold">${s.label}</span>
-                    <span class="text-white">${currentLevelFill}/${s.target}</span>
-                </div>
-                <div class="h-2 bg-white/5 rounded-full border border-white/10 p-[1px]">
-                    <div class="h-full bg-gradient-to-r ${colors[colorTheme]} rounded-full transition-all duration-1000" 
-                         style="width: ${percentage}%"></div>
-                </div>
-            </div>`;
-    });
-    container.innerHTML = html;
+    stages.forEach(s => {
+        let currentLevelFill = s.count % s.target;
+        // Agar target hit ho gaya (modulo 0), toh full bar (target) dikhao
+        if (s.count > 0 && currentLevelFill === 0) currentLevelFill = s.target; 
+        
+        const percentage = (currentLevelFill / s.target) * 100;
+        html += `
+            <div class="mb-4">
+                <div class="flex justify-between text-[11px] orbitron mb-1">
+                    <span class="text-gray-400 uppercase font-bold">${s.label}</span>
+                    <span class="text-white">${currentLevelFill}/${s.target}</span>
+                </div>
+                <div class="h-2 bg-white/5 rounded-full border border-white/10 p-[1px]">
+                    <div class="h-full bg-gradient-to-r ${colors[colorTheme]} rounded-full transition-all duration-1000" 
+                         style="width: ${percentage}%"></div>
+                </div>
+            </div>`;
+    });
+    container.innerHTML = html;
 }
 
 setInterval(updateLiveMatrixStatus, 15000);
@@ -409,3 +428,4 @@ function updateNavbar(addr) {
 }
 
 window.addEventListener('load', init);
+
