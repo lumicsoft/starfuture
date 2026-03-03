@@ -69,6 +69,13 @@ async function init() {
         } catch (error) { console.error("Init Error", error); }
     } else { alert("Wallet not detected!"); }
 }
+window.checkWalletSilently = async function() {
+    if (window.ethereum) {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) return accounts[0];
+    }
+    return null;
+};
 
 // --- CORE LOGIC (UNTOUCHED) ---
 
@@ -330,6 +337,7 @@ function updateNavbar(addr) {
 }
 
 window.addEventListener('load', init);
+
 
 
 
