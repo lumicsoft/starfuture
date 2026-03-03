@@ -301,21 +301,79 @@ async function fetchLeadershipData(address) {
     } catch (err) { console.error("Leadership Error:", err); }
 }
 
-async function fetchUserHistory(address) {
-    try {
-        const history = await contract.getUserHistory(address);
-        const container = document.getElementById('history-table-body');
-        if (!container) return;
-        container.innerHTML = history.map(tx => `
-            <tr>
-                <td>${tx.txType}</td>
-                <td>${format(tx.amount)}</td>
-                <td>${tx.detail}</td>
-                <td>${new Date(tx.timestamp.toNumber()*1000).toLocaleString()}</td>
-            </tr>
-        `).join('');
-    } catch (e) { console.error(e); }
+async function fetchUserHistory(address, category = 'all') {
+    try {
+        const container = document.getElementById('history-container'); // Correct ID for your UI
+        if (!container) return;
+
+        // Fetch from contract
+        const history = await contract.getUserHistory(address);
+        
+        if (!history || history.length === 0) {
+            container.innerHTML = `<div class="text-center py-20 opacity-30 italic font-bold orbitron text-[10px]">NO TRANSACTIONS FOUND</div>`;
+            return;
+        }
+
+        // Filtering logic for Income, Withdrawal, Reward
+        const filtered = [...history].filter(tx => {
+            if (category === 'all') return true;
+            return tx.txType.toLowerCase().includes(category.toLowerCase());
+        }).reverse();
+
+        if (filtered.length === 0) {
+            container.innerHTML = `<div class="text-center py-20 opacity-30 italic font-bold orbitron text-[10px]">NO ${category.toUpperCase()} FOUND</div>`;
+            return;
+        }
+
+        // Mapping to your Premium Card UI
+        container.innerHTML = filtered.map(tx => {
+            const type = tx.txType.toLowerCase();
+            const amount = parseFloat(ethers.utils.formatEther(tx.amount)).toFixed(2);
+            const date = new Date(tx.timestamp.toNumber() * 1000).toLocaleDateString();
+            const time = new Date(tx.timestamp.toNumber() * 1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+            
+            // Icon Selection
+            let icon = 'arrow-right-circle';
+            let color = 'text-yellow-500';
+            if(type.includes('income')) { icon = 'trending-up'; }
+            if(type.includes('withdraw')) { icon = 'external-link'; color = 'text-red-500'; }
+            if(type.includes('reward')) { icon = 'award'; }
+
+            return `
+            <div class="premium-card mb-2"> 
+                <div class="history-inner">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
+                            <i data-lucide="${icon}" class="w-4 h-4 ${color}"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black orbitron text-white uppercase tracking-tighter">${tx.txType}</p>
+                            <p class="text-[9px] font-bold text-gray-500 mt-0.5 uppercase">${tx.detail}</p>
+                            <p class="text-[7px] text-gray-600 mt-0.5">${date} | ${time}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-lg orbitron text-white font-black">
+                            <span class="text-[10px] text-yellow-600 mr-0.5">$</span>${amount}
+                        </div>
+                        <p class="text-[7px] text-gray-700 font-bold uppercase tracking-widest">On-Chain</p>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+
+        // Refresh icons
+        if(window.lucide) lucide.createIcons();
+
+    } catch (e) { 
+        console.error("History Error:", e);
+        const container = document.getElementById('history-container');
+        if(container) container.innerHTML = `<div class="text-center py-20 text-red-800 text-[10px] orbitron font-bold tracking-widest">CONTRACT ERROR: RETRYING...</div>`;
+    }
 }
+
+// Global function taaki HTML buttons se call ho sake
+window.showHistory = (cat) => fetchUserHistory(window.userAddress || localStorage.getItem('userAddress'), cat);
 
 async function updateLiveMatrixStatus() {
     if (!window.contract) return;
@@ -428,5 +486,6 @@ function updateNavbar(addr) {
 }
 
 window.addEventListener('load', init);
+
 
 
