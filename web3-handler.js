@@ -20,15 +20,24 @@ const RANK_DETAILS = [
 
 // --- ABI (Full Updated for USDT Contract) ---
 const CONTRACT_ABI = [
-    "function register(address _referrer) external",
-    "function withdraw() external", // Withdraw mein amount nahi chahiye naye contract mein
-    "function claimRewards() external", // Sahi function name claimRewards hai
-    "function userStats(address) view returns (uint256 id, address referrer, uint256 totalReferrals, uint256 totalTeam, uint256 totalWithdrawn, uint256 totalRewardClaimed, uint256 lastWithdrawTime, uint8 currentClub)",
-    "function userIncomes(address) view returns (uint256 magicIncome, uint256 club1Income, uint256 club2Income, uint256 club3Income, uint256 club4Income, uint256 gtStage1Income, uint256 gtStage2Income, uint256 gtStage3Income, uint256 totalEarned, uint256 availableBalance)",
+    // Write Functions
+    "function register(address _ref) external",
+    "function withdraw(uint256 _amt) external",
+    "function claimReward() external",
+    
+    // View Functions (Mappings)
+    "function isRegistered(address) view returns (bool)",
+    "function referrer(address) view returns (address)",
+    "function userStats(address, uint256) view returns (uint256)", // Mapping with index
+    "function userIncomes(address, uint256) view returns (uint256)", // Mapping with index
     "function rewardFund() view returns (uint256)",
-    "function getUserHistory(address _user) view returns (tuple(string txType, uint256 amount, string detail, uint256 timestamp)[])"
+    
+    // Explicit View Functions (Jo aapne contract ke niche likhe hain)
+    "function getUserBasicStats(address _user) external view returns (uint256 team, uint256 directs, uint256 totalEarned)",
+    "function getUserAccountStats(address _user) external view returns (string memory currentClub, uint256 availableBalance, uint256 withdrawn)",
+    "function getMatrixIncomeReport(address _user) external view returns (uint256 dMagic, uint256 c1, uint256 c2, uint256 c3, uint256 c4)",
+    "function getAdvancedIncomeReport(address _user) external view returns (uint256 g1, uint256 g2, uint256 g3, uint256 rwd)"
 ];
-
 const ERC20_ABI = ["function approve(address spender, uint256 amount) public returns (bool)", "function allowance(address owner, address spender) public view returns (uint256)"];
 
 // ROI calculation (0.9% fixed)
@@ -567,6 +576,7 @@ function updateNavbar(addr) {
 }
 
 window.addEventListener('load', init);
+
 
 
 
