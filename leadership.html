@@ -70,11 +70,11 @@
                     <div class="flex items-center justify-between mb-8 border-b border-white/5 pb-4">
                         <div>
                             <h3 class="text-sm font-black orbitron text-yellow-500 uppercase italic">Royalty Club</h3>
-                            <p class="text-[9px] text-gray-500 font-bold uppercase">High Performance</p>
+                            <p class="text-[9px] text-gray-500 font-bold uppercase">Multi-Stage Cycles</p>
                         </div>
                         <i data-lucide="crown" class="text-yellow-500 w-5 h-5"></i>
                     </div>
-                    <div id="club-status" class="space-y-6">
+                    <div id="club-status" class="space-y-6 max-h-[500px] overflow-y-auto pr-2">
                         <div class="text-center py-10 text-gray-600 animate-pulse text-[10px] font-bold italic uppercase">Loading Clubs...</div>
                     </div>
                 </div>
@@ -85,7 +85,7 @@
                     <div class="flex items-center justify-between mb-8 border-b border-white/5 pb-4">
                         <div>
                             <h3 class="text-sm font-black orbitron text-purple-500 uppercase italic">GT Tables</h3>
-                            <p class="text-[9px] text-gray-500 font-bold uppercase">Filling Progress</p>
+                            <p class="text-[9px] text-gray-500 font-bold uppercase">Dual-Stage Progress</p>
                         </div>
                         <i data-lucide="layers" class="text-purple-500 w-5 h-5"></i>
                     </div>
@@ -105,13 +105,13 @@
     <script src="web3-handler.js"></script>
 
     <script>
-        let lastDataHash = ""; // Flicker rokne ke liye
+        let lastDataHash = ""; 
 
-        // Contract Logic: total count % requirement
+        // Modulo logic: stage complete hone par 0 dikhane ke bajaye target dikhao
         function calculateFilled(totalCount, matrixReq) {
             if (!totalCount || totalCount == 0) return 0;
             let current = totalCount % matrixReq;
-            return (current === 0) ? 0 : current; // Show 0 if just completed, ready for next
+            return (current === 0) ? matrixReq : current; 
         }
 
         async function updateLiveUI() {
@@ -127,12 +127,11 @@
                     window.contract.getGTCounts()
                 ]);
 
-                // Data Hash Check (No Refresh if no change)
                 const currentHash = JSON.stringify([...mCounts, ...cCounts, ...gCounts]);
                 if (currentHash === lastDataHash) return; 
                 lastDataHash = currentHash;
 
-                // Magic Pool (2, 4, 8, 16, 32, 64)
+                // --- Magic Pool (Stage 1-6) ---
                 const magicData = [
                     { label: 'STAGE 1', filled: calculateFilled(mCounts[0], 2), total: 2, color: 'pool-bar-blue' },
                     { label: 'STAGE 2', filled: calculateFilled(mCounts[1], 4), total: 4, color: 'pool-bar-blue' },
@@ -143,28 +142,32 @@
                 ];
                 renderSection('magic-pool-status', magicData);
 
-                // Clubs (All 2x)
-                const clubData = [
-                    { label: 'CLUB 1', filled: calculateFilled(cCounts[0], 2), total: 2, color: 'pool-bar-gold' },
-                    { label: 'CLUB 2', filled: calculateFilled(cCounts[1], 2), total: 2, color: 'pool-bar-gold' },
-                    { label: 'CLUB 3', filled: calculateFilled(cCounts[2], 2), total: 2, color: 'pool-bar-gold' },
-                    { label: 'CLUB 4', filled: calculateFilled(cCounts[3], 2), total: 2, color: 'pool-bar-gold' }
-                ];
+                // --- Royalty Clubs (Har Club ki 3 sub-stages: 2, 4, 8) ---
+                const clubData = [];
+                const clubNames = ["CLUB 1", "CLUB 2", "CLUB 3", "CLUB 4"];
+                cCounts.forEach((count, i) => {
+                    const val = count.toNumber();
+                    clubData.push({ label: `${clubNames[i]} S1`, filled: calculateFilled(val, 2), total: 2, color: 'pool-bar-gold' });
+                    clubData.push({ label: `${clubNames[i]} S2`, filled: calculateFilled(val, 4), total: 4, color: 'pool-bar-gold' });
+                    clubData.push({ label: `${clubNames[i]} S3`, filled: calculateFilled(val, 8), total: 8, color: 'pool-bar-gold' });
+                });
                 renderSection('club-status', clubData);
 
-                // GT Tables (All 2x)
-                const gtData = [
-                    { label: 'TABLE GT-1', filled: calculateFilled(gCounts[0], 2), total: 2, color: 'pool-bar-purple' },
-                    { label: 'TABLE GT-2', filled: calculateFilled(gCounts[1], 2), total: 2, color: 'pool-bar-purple' },
-                    { label: 'TABLE GT-3', filled: calculateFilled(gCounts[2], 2), total: 2, color: 'pool-bar-purple' }
-                ];
+                // --- GT Tables (Har GT ki 2 sub-stages: 2, 4) ---
+                const gtData = [];
+                const gtNames = ["GT-1", "GT-2", "GT-3"];
+                gCounts.forEach((count, i) => {
+                    const val = count.toNumber();
+                    gtData.push({ label: `${gtNames[i]} S1`, filled: calculateFilled(val, 2), total: 2, color: 'pool-bar-purple' });
+                    gtData.push({ label: `${gtNames[i]} S2`, filled: calculateFilled(val, 4), total: 4, color: 'pool-bar-purple' });
+                });
                 renderSection('gt-status', gtData);
 
                 lucide.createIcons();
             } catch (e) {
                 console.error("Matrix Sync Error:", e);
             }
-            setTimeout(updateLiveUI, 10000); // 10 Seconds Background Sync
+            setTimeout(updateLiveUI, 10000);
         }
 
         function renderSection(id, items) {
@@ -173,18 +176,20 @@
             container.innerHTML = items.map(item => {
                 const pct = (item.filled / item.total) * 100;
                 const remaining = item.total - item.filled;
+                const isComplete = remaining === 0;
+
                 return `
-                    <div class="space-y-2 mb-4">
-                        <div class="flex justify-between items-end">
-                            <span class="text-[10px] font-black orbitron text-gray-400 uppercase tracking-widest">${item.label}</span>
+                    <div class="space-y-2 mb-5 last:mb-0">
+                        <div class="flex justify-between items-end px-1">
+                            <span class="text-[9px] font-black orbitron text-gray-400 uppercase tracking-widest">${item.label}</span>
                             <span class="text-[11px] font-bold orbitron text-white">${item.filled}<span class="text-gray-600">/${item.total}</span></span>
                         </div>
                         <div class="h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
                             <div class="h-full rounded-full transition-all duration-1000 ${item.color}" style="width: ${pct}%"></div>
                         </div>
                         <div class="flex justify-between items-center px-0.5">
-                            <span class="text-[8px] font-bold italic text-yellow-600 uppercase">
-                                ${remaining === 0 ? 'Processing Move...' : remaining + ' Users Needed'}
+                            <span class="text-[8px] font-bold italic ${isComplete ? 'text-green-500' : 'text-yellow-600'} uppercase">
+                                ${isComplete ? 'Cycle Done ✓' : remaining + ' Spots Left'}
                             </span>
                             <span class="text-[9px] font-black text-white/30">${Math.round(pct)}%</span>
                         </div>
