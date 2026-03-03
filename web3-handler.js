@@ -455,70 +455,78 @@ async function fetchAllData(address) {
             return;
         }
 
-        // 1. Naye Contract ke functions se data fetch karna
-        // userStats -> basic info, userIncomes -> saari earning details
-        const [stats, incomes, pool] = await Promise.all([
-            activeContract.userStats(address), 
-            activeContract.userIncomes(address), 
+        // --- 1. CONTRACT SE DATA FETCH KARNA (Optimized for your Contract) ---
+        // Hum contract ke explicitly banaye gaye view functions use karenge
+        const [basic, account, matrix, advanced, fund] = await Promise.all([
+            activeContract.getUserBasicStats(address),    // team, directs, totalEarned
+            activeContract.getUserAccountStats(address),  // currentClub, availableBalance, withdrawn
+            activeContract.getMatrixIncomeReport(address),// dMagic, c1, c2, c3, c4
+            activeContract.getAdvancedIncomeReport(address), // g1, g2, g3, rwd
             activeContract.rewardFund()
         ]);
 
         // --- 2. BASIC INFO & ADDRESS ---
+        // Address ko full aur short dono jagah update karenge
         updateText('user-address', address.substring(0, 6) + "..." + address.substring(38));
-        updateText('username-display', "ID: " + stats.id.toString());
-        updateText('rank-display', getClubName(stats.currentClub));
+        updateText('full-address', address); // Agar kahin full dikhana ho
+        updateText('username-display', "ACTIVE USER"); 
+        updateText('rank-display', account.currentClub);
 
         // --- 3. MAIN STATS (Cards) ---
-        updateText('team-count', stats.totalTeam.toString());
-        updateText('directs-count', stats.totalReferrals.toString());
-        updateText('total-earned', format(incomes.totalEarned));
-        updateText('available-balance', format(incomes.availableBalance));
-        updateText('withdrawable', format(incomes.availableBalance)); // Withdraw section ke liye
-        updateText('total-withdrawn', format(stats.totalWithdrawn));
-        updateText('reward-fund', format(pool));
+        updateText('team-count', basic.team.toString());
+        updateText('directs-count', basic.directs.toString());
+        updateText('total-earned', format(basic.totalEarned));
+        updateText('available-balance', format(account.availableBalance));
+        updateText('withdrawable', format(account.availableBalance)); // Withdraw modal ke liye
+        updateText('total-withdrawn', format(account.withdrawn));
+        updateText('reward-fund', format(fund));
 
-        // --- 4. INCOME BREAKDOWN (Specific Sections) ---
-        updateText('income-magic', format(incomes.magicIncome));
-        updateText('income-club1', format(incomes.club1Income));
-        updateText('income-club2', format(incomes.club2Income));
-        updateText('income-club3', format(incomes.club3Income));
-        updateText('income-club4', format(incomes.club4Income));
+        // --- 4. INCOME BREAKDOWN (Matrix) ---
+        updateText('income-magic', format(matrix.dMagic));
+        updateText('income-club1', format(matrix.c1));
+        updateText('income-club2', format(matrix.c2));
+        updateText('income-club3', format(matrix.c3));
+        updateText('income-club4', format(matrix.c4));
         
         // --- 5. GT STAGES & REWARDS ---
-        updateText('income-gt1', format(incomes.gtStage1Income));
-        updateText('income-gt2', format(incomes.gtStage2Income));
-        updateText('income-gt3', format(incomes.gtStage3Income));
-        updateText('income-reward', format(stats.totalRewardClaimed));
+        updateText('income-gt1', format(advanced.g1));
+        updateText('income-gt2', format(advanced.g2));
+        updateText('income-gt3', format(advanced.g3));
+        updateText('income-reward', format(advanced.rwd));
 
         // --- 6. REFERRAL URL LOGIC ---
         const baseUrl = window.location.origin + window.location.pathname.replace('index1.html', 'register.html');
         const refField = document.getElementById('refURL');
-        if(refField) refField.value = `${baseUrl}?ref=${address}`;
+        if(refField) {
+            refField.value = `${baseUrl}?ref=${address}`;
+        }
 
-        // --- 7. BUTTON STATES (If on Register/Login Page) ---
-        if (stats.id.gt(0)) {
+        // --- 7. UI ENHANCEMENTS (Wallet Status) ---
+        const statusText = document.getElementById('main-status-text');
+        if(statusText) {
+            statusText.innerText = "CONNECTED";
+            statusText.className = "text-xs font-black orbitron text-green-500";
+        }
+
+        // Agar user register hai toh register button disable karna (Login page ke liye)
+        const isRegistered = await activeContract.isRegistered(address);
+        if (isRegistered) {
             const regBtn = document.getElementById('register-btn');
             if(regBtn) {
                 regBtn.innerText = "ALREADY ACTIVE";
                 regBtn.disabled = true;
-                if(regBtn.classList.contains('btn-gold-pro')) {
-                    regBtn.classList.replace('btn-gold-pro', 'bg-green-600/20');
-                }
-            }
-            
-            // Status Badges Update
-            const statusText = document.getElementById('main-status-text');
-            if(statusText) {
-                statusText.innerText = "ACTIVE";
-                statusText.className = "text-xs font-black orbitron text-green-500";
+                regBtn.classList.add('opacity-50', 'cursor-not-allowed');
             }
         }
 
     } catch (err) { 
-        console.error("Data Sync Error:", err); 
+        console.error("Data Sync Error:", err);
+        // CALL_EXCEPTION handle karne ke liye alert (optional)
+        if(err.code === 'CALL_EXCEPTION') {
+            console.log("Please ensure you are on BSC Testnet!");
+        }
     }
 }
-
 // --- UTILS (Inhe fetchAllData ke bahar hi rehne dein) ---
 function getClubName(id) {
     const clubs = ["NO CLUB", "CLUB 1", "CLUB 2", "CLUB 3", "CLUB 4"];
@@ -576,6 +584,7 @@ function updateNavbar(addr) {
 }
 
 window.addEventListener('load', init);
+
 
 
 
