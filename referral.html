@@ -3,16 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team Report - Pro Max</title>
+    <title>Team Report - StarFuture</title>
 
     <link rel="stylesheet" href="style1.css">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
-<body class="p-4 md:p-10">
+<body class="p-4 md:p-10 bg-black text-white">
 
     <main class="max-w-7xl mx-auto space-y-6 relative z-10">
 
@@ -33,12 +32,12 @@
             </div></div>
 
             <div class="premium-card"><div class="inner-content stat-box">
-                <div class="flex items-center gap-3"><i data-lucide="user-plus" class="text-yellow-500 w-6 h-6"></i><p class="label-text">Direct</p></div>
+                <div class="flex items-center gap-3"><i data-lucide="user-plus" class="text-yellow-500 w-6 h-6"></i><p class="label-text">Direct Inc</p></div>
                 <h3 class="amount-text orbitron" id="direct-earnings">0.00</h3>
             </div></div>
 
             <div class="premium-card"><div class="inner-content stat-box">
-                <div class="flex items-center gap-3"><i data-lucide="layers" class="text-purple-500 w-6 h-6"></i><p class="label-text">Level</p></div>
+                <div class="flex items-center gap-3"><i data-lucide="layers" class="text-purple-500 w-6 h-6"></i><p class="label-text">Level Inc</p></div>
                 <h3 class="amount-text orbitron" id="level-earnings">0.00</h3>
             </div></div>
         </div>
@@ -46,10 +45,10 @@
         <div class="premium-card">
             <div class="inner-content !block py-8">
                 <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
-                    <h3 class="text-sm font-black orbitron uppercase italic text-yellow-500">Team Report</h3>
+                    <h3 class="text-sm font-black orbitron uppercase italic text-yellow-500">Team Level Report</h3>
                     
                     <div class="flex items-center gap-3 bg-black/50 p-2 px-4 rounded-xl border border-white/10">
-                        <span class="label-text">Select Level:</span>
+                        <span class="label-text text-xs">SELECT LEVEL:</span>
                         <select id="levelSelect" onchange="loadLevelData(this.value)" class="bg-transparent text-yellow-500 font-black orbitron text-xs outline-none cursor-pointer">
                             <script>for(let i=1; i<=15; i++) document.write(`<option value="${i}">Level ${i}</option>`);</script>
                         </select>
@@ -57,19 +56,18 @@
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="luxury-table">
+                    <table class="luxury-table w-full text-left">
                         <thead>
-                            <tr>
-                                <th>USER ADDRESS</th>
-                                <th>LEVEL</th>
-                                <th>TOTAL DEPOSIT</th>
-                                <th>TEAM VOLUME</th>
-                                <th>STATUS</th>
-                                <th>JOIN DATE</th>
+                            <tr class="border-b border-white/10">
+                                <th class="py-4 px-2 text-xs font-black orbitron text-gray-500">USER ADDRESS</th>
+                                <th class="py-4 px-2 text-xs font-black orbitron text-gray-500">LEVEL</th>
+                                <th class="py-4 px-2 text-xs font-black orbitron text-gray-500">PACKAGE</th>
+                                <th class="py-4 px-2 text-xs font-black orbitron text-gray-500">STATUS</th>
+                                <th class="py-4 px-2 text-xs font-black orbitron text-gray-500">JOIN DATE</th>
                             </tr>
                         </thead>
                         <tbody id="team-table-body" class="text-gray-400">
-                            <tr><td colspan="6" class="p-10 text-center italic text-gray-600">Syncing Network...</td></tr>
+                            <tr><td colspan="5" class="p-10 text-center italic text-gray-600 orbitron animate-pulse">SYNCING BLOCKCHAIN...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -82,69 +80,89 @@
     <script src="components.js"></script> 
     <script src="web3-handler.js"></script>
     
-<script>
-    lucide.createIcons();
+    <script>
+        lucide.createIcons();
 
-    async function loadTeamData() {
-        // window.contract check
-        if (!window.contract || !window.signer) {
-            setTimeout(loadTeamData, 1000);
-            return;
-        }
-
-        try {
-            const address = await window.signer.getAddress();
-            const basic = await window.contract.getUserBasicStats(address);
-            const matrix = await window.contract.getMatrixIncomeReport(address);
-
-            // IDs match karein
-            if(document.getElementById('direct-count')) document.getElementById('direct-count').innerText = basic[1].toString();
-            if(document.getElementById('team-count')) document.getElementById('team-count').innerText = basic[0].toString();
-            
-            // Hum window.format use karenge jo aapke handler mein hai
-            if(document.getElementById('total-earned')) document.getElementById('total-earned').innerText = window.format(basic[2]);
-            if(document.getElementById('direct-earnings')) document.getElementById('direct-earnings').innerText = window.format(matrix[0]);
-            if(document.getElementById('level-earnings')) document.getElementById('level-earnings').innerText = window.format(matrix[1]);
-
-            loadLevelMembers(1);
-        } catch (err) { console.error(err); }
-    }
-
-    async function loadLevelMembers(level) {
-        const tableBody = document.getElementById('team-table-body');
-        tableBody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-yellow-500 animate-pulse">LOADING...</td></tr>`;
-        
-        try {
-            const address = await window.signer.getAddress();
-            const members = await window.contract.getLevelTeam(address, level);
-
-            if (!members || members.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-gray-600 italic">EMPTY LEVEL</td></tr>`;
+        // 1. Initial Data Load
+        async function loadTeamData() {
+            // Check if web3 handler is ready
+            if (!window.contract || !window.signer) {
+                console.log("Waiting for contract...");
+                setTimeout(loadTeamData, 1000);
                 return;
             }
 
-            let html = '';
-            for (let mAddr of members) {
-                html += `<tr>
-                    <td class="py-4 font-mono text-blue-400 text-xs">${mAddr.substring(0,10)}...</td>
-                    <td class="text-gray-400 font-bold">Lvl ${level}</td>
-                    <td class="text-white font-black">15.00</td>
-                    <td class="text-gray-500">---</td>
-                    <td><span class="text-green-500 text-[10px] font-bold">ACTIVE</span></td>
-                    <td class="text-gray-500 text-[10px]">VERIFIED</td>
-                </tr>`;
+            try {
+                const address = await window.signer.getAddress();
+                
+                // Fetch stats from your ABI functions
+                const basic = await window.contract.getUserBasicStats(address);
+                const matrix = await window.contract.getMatrixIncomeReport(address);
+
+                // Update UI Cards
+                // basic: [team, directs, totalEarned]
+                if(document.getElementById('direct-count')) document.getElementById('direct-count').innerText = basic[1].toString();
+                if(document.getElementById('team-count')) document.getElementById('team-count').innerText = basic[0].toString();
+                
+                // Using window.format from web3-handler
+                if(document.getElementById('total-earned')) document.getElementById('total-earned').innerText = window.format(basic[2]);
+                if(document.getElementById('direct-earnings')) document.getElementById('direct-earnings').innerText = window.format(matrix[0]);
+                if(document.getElementById('level-earnings')) document.getElementById('level-earnings').innerText = window.format(matrix[1]);
+
+                // Default load level 1
+                loadLevelMembers(1);
+
+            } catch (err) { 
+                console.error("Dashboard Load Error:", err); 
             }
-            tableBody.innerHTML = html;
-        } catch (err) { console.error(err); }
-    }
+        }
 
-    window.loadLevelData = (v) => loadLevelMembers(v);
-    window.addEventListener('load', loadTeamData);
-</script>
+        // 2. Fetch Members for Specific Level
+        async function loadLevelMembers(level) {
+            const tableBody = document.getElementById('team-table-body');
+            if(!tableBody) return;
+
+            tableBody.innerHTML = `<tr><td colspan="5" class="p-10 text-center text-yellow-500 orbitron animate-pulse">SCANNING LEVEL ${level}...</td></tr>`;
+            
+            try {
+                const address = await window.signer.getAddress();
+                const members = await window.contract.getLevelTeam(address, level);
+
+                if (!members || members.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="5" class="p-20 text-center text-gray-600 italic uppercase tracking-widest">No members found in Level ${level}</td></tr>`;
+                    return;
+                }
+
+                let html = '';
+                const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+                for (let mAddr of members) {
+                    const shortAddr = mAddr.substring(0, 10) + "..." + mAddr.substring(38);
+                    
+                    html += `
+                    <tr class="border-b border-white/5 hover:bg-white/5 transition-all">
+                        <td class="py-4 px-2 font-mono text-blue-400 text-xs">${shortAddr}</td>
+                        <td class="px-2 text-gray-400 font-bold text-xs">LEVEL ${level}</td>
+                        <td class="px-2 text-white font-black text-xs">15.00 USDT</td>
+                        <td class="px-2">
+                            <span class="px-2 py-1 rounded bg-green-500/10 text-green-500 text-[10px] font-bold border border-green-500/20">ACTIVE</span>
+                        </td>
+                        <td class="px-2 text-gray-500 font-mono text-[10px] uppercase">${today}</td>
+                    </tr>`;
+                }
+                tableBody.innerHTML = html;
+
+            } catch (err) { 
+                console.error("Level Fetch Error:", err);
+                tableBody.innerHTML = `<tr><td colspan="5" class="p-10 text-center text-red-500">BLOCKCHAIN SYNC ERROR</td></tr>`;
+            }
+        }
+
+        // Global function for Select Dropdown
+        window.loadLevelData = (v) => loadLevelMembers(v);
+
+        // Run on load
+        window.addEventListener('load', loadTeamData);
+    </script>
 </body>
-
-
 </html>
-
-
-
