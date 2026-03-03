@@ -3,177 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Matrix Status | Pro Max</title>
+    <title>Live Matrix Status | Pro Max Dashboard</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     
+    <link rel="stylesheet" href="style1.css">
+    
     <style>
-        body { font-family: 'Plus+Jakarta+Sans', sans-serif; }
-        .orbitron { font-family: 'Orbitron', sans-serif; }
-        .pool-bar-blue { background: linear-gradient(90deg, #3b82f6, #60a5fa); box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
-        .pool-bar-yellow { background: linear-gradient(90deg, #eab308, #fde047); box-shadow: 0 0 10px rgba(234, 179, 8, 0.5); }
-        .pool-bar-purple { background: linear-gradient(90deg, #a855f7, #c084fc); box-shadow: 0 0 10px rgba(168, 85, 247, 0.5); }
-        .inner-content { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); }
-        .premium-card { position: relative; overflow: hidden; }
+        /* Matrix specific progress bars - Matching Gold Theme */
+        .pool-bar-gold { background: linear-gradient(90deg, #ca8a04, #facc15); box-shadow: 0 0 10px rgba(202, 138, 4, 0.4); }
+        .pool-bar-blue { background: linear-gradient(90deg, #2563eb, #60a5fa); box-shadow: 0 0 10px rgba(37, 99, 235, 0.4); }
+        .pool-bar-purple { background: linear-gradient(90deg, #9333ea, #c084fc); box-shadow: 0 0 10px rgba(147, 51, 234, 0.4); }
+        
+        .matrix-card { transition: transform 0.3s ease; }
+        .matrix-card:hover { transform: translateY(-5px); }
+        
         @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .animate-spin-slow { animation: spin-slow 3s linear infinite; }
+        .animate-spin-slow { animation: spin-slow 4s linear infinite; }
     </style>
 </head>
-<body class="p-4 md:p-10 bg-black text-white">
+<body class="bg-black text-white">
 
-    <main class="max-w-7xl mx-auto space-y-8 pt-10 pb-20 relative z-10">
+    <div id="header-placeholder"></div>
+
+    <main class="max-w-7xl mx-auto space-y-8 mt-24 mb-32 px-4">
         
-        <div class="text-center mb-12">
-            <h1 class="text-4xl font-black orbitron italic uppercase tracking-tighter">Global <span class="text-yellow-500">Live Status</span></h1>
-            <p class="text-gray-500 text-xs font-bold uppercase tracking-[0.3em] mt-2">Real-time Blockchain Matrix Synchronization</p>
+        <div class="premium-card">
+            <div class="inner-content !block p-6 bg-gradient-to-r from-yellow-600/10 to-transparent">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h1 class="text-3xl font-black orbitron italic uppercase tracking-tighter text-yellow-500">
+                            Global <span class="text-white">Live Status</span>
+                        </h1>
+                        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em] mt-1">
+                            Real-time Matrix Cycle Synchronization
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3 bg-black/50 px-5 py-2 rounded-full border border-yellow-500/20">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-[10px] font-black orbitron text-green-500 uppercase tracking-widest">Live Network Sync</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            <div class="premium-card">
-                <div class="inner-content !block p-6 rounded-2xl">
-                    <div class="flex items-center justify-between mb-8 border-b border-white/10 pb-4">
+            <div class="premium-card matrix-card">
+                <div class="inner-content !block p-6">
+                    <div class="flex items-center justify-between mb-8 border-b border-white/5 pb-4">
                         <div>
-                            <h3 class="text-lg font-black orbitron text-blue-400 italic">MAGIC POOL</h3>
-                            <p class="text-[10px] text-gray-500 font-bold uppercase">Dynamic Progression</p>
+                            <h3 class="text-sm font-black orbitron text-blue-400 uppercase italic">Magic Pool</h3>
+                            <p class="text-[9px] text-gray-500 font-bold uppercase">6 Stage Progression</p>
                         </div>
-                        <i data-lucide="refresh-cw" class="text-blue-500 w-6 h-6 animate-spin-slow"></i>
+                        <i data-lucide="refresh-cw" class="text-blue-500 w-5 h-5 animate-spin-slow"></i>
                     </div>
-                    <div id="magic-pool-status" class="space-y-8">
-                        <div class="text-center py-10 text-gray-600 animate-pulse uppercase text-xs italic">Syncing Magic Pool...</div>
+                    <div id="magic-pool-status" class="space-y-6">
+                        <div class="text-center py-10 text-gray-600 animate-pulse text-[10px] font-bold italic uppercase">Syncing Stages...</div>
                     </div>
                 </div>
             </div>
 
-            <div class="premium-card">
-                <div class="inner-content !block p-6 rounded-2xl">
-                    <div class="flex items-center justify-between mb-8 border-b border-white/10 pb-4">
+            <div class="premium-card matrix-card">
+                <div class="inner-content !block p-6">
+                    <div class="flex items-center justify-between mb-8 border-b border-white/5 pb-4">
                         <div>
-                            <h3 class="text-lg font-black orbitron text-yellow-500 italic">ROYALTY CLUB</h3>
-                            <p class="text-[10px] text-gray-500 font-bold uppercase">Global Performance</p>
+                            <h3 class="text-sm font-black orbitron text-yellow-500 uppercase italic">Royalty Club</h3>
+                            <p class="text-[9px] text-gray-500 font-bold uppercase">High Performance</p>
                         </div>
-                        <i data-lucide="crown" class="text-yellow-500 w-6 h-6"></i>
+                        <i data-lucide="crown" class="text-yellow-500 w-5 h-5"></i>
                     </div>
-                    <div id="club-status" class="space-y-8">
-                        <div class="text-center py-10 text-gray-600 animate-pulse uppercase text-xs italic">Syncing Club Data...</div>
+                    <div id="club-status" class="space-y-6">
+                        <div class="text-center py-10 text-gray-600 animate-pulse text-[10px] font-bold italic uppercase">Syncing Clubs...</div>
                     </div>
                 </div>
             </div>
 
-            <div class="premium-card">
-                <div class="inner-content !block p-6 rounded-2xl">
-                    <div class="flex items-center justify-between mb-8 border-b border-white/10 pb-4">
+            <div class="premium-card matrix-card">
+                <div class="inner-content !block p-6">
+                    <div class="flex items-center justify-between mb-8 border-b border-white/5 pb-4">
                         <div>
-                            <h3 class="text-lg font-black orbitron text-purple-500 italic">GT TABLE</h3>
-                            <p class="text-[10px] text-gray-500 font-bold uppercase">Global Table Filling</p>
+                            <h3 class="text-sm font-black orbitron text-purple-500 uppercase italic">GT Tables</h3>
+                            <p class="text-[9px] text-gray-500 font-bold uppercase">Filling Progress</p>
                         </div>
-                        <i data-lucide="layers" class="text-purple-500 w-6 h-6"></i>
+                        <i data-lucide="layers" class="text-purple-500 w-5 h-5"></i>
                     </div>
-                    <div id="gt-status" class="space-y-8">
-                        <div class="text-center py-10 text-gray-600 animate-pulse uppercase text-xs italic">Syncing GT Tables...</div>
+                    <div id="gt-status" class="space-y-6">
+                        <div class="text-center py-10 text-gray-600 animate-pulse text-[10px] font-bold italic uppercase">Syncing Tables...</div>
                     </div>
                 </div>
             </div>
 
         </div>
+
     </main>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
-    <script src="web3-handler.js"></script>
-    
-    <script>
-        lucide.createIcons();
+    <div id="footer-placeholder"></div>
 
-        // Helper to calculate "Filled" slots in a cycle
-        function calculateFilled(totalCount, matrixRequirement) {
-            if (totalCount === 0) return 0;
-            let current = totalCount % matrixRequirement;
-            return (current === 0) ? matrixRequirement : current;
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <script src="components.js"></script> <script src="web3-handler.js"></script> <script>
+        // Matrix Logic
+        function calculateFilled(totalCount, matrixReq) {
+            if (!totalCount || totalCount == 0) return 0;
+            let current = totalCount % matrixReq;
+            return (current === 0) ? matrixReq : current;
         }
 
-        async function updateMatrixUI() {
-            if(!window.contract) { 
-                console.log("Contract not initialized, retrying...");
-                setTimeout(updateMatrixUI, 1000); 
-                return; 
+        async function updateLiveUI() {
+            if(!window.contract) {
+                setTimeout(updateLiveUI, 2000);
+                return;
             }
             
             try {
-                // Fetching Live Counts from the new functions we added to contract
+                // Fetch live stats from smart contract
                 const mCounts = await window.contract.getMagicPoolCounts();
                 const cCounts = await window.contract.getClubCounts();
                 const gCounts = await window.contract.getGTCounts();
 
-                // --- 1. MAGIC POOL DATA ---
+                // Magic Pool Mapping
                 const magicData = [
-                    { label: 'STAGE 1 (2x)', filled: calculateFilled(mCounts[0].toNumber(), 2), total: 2, color: 'pool-bar-blue' },
-                    { label: 'STAGE 2 (4x)', filled: calculateFilled(mCounts[1].toNumber(), 4), total: 4, color: 'pool-bar-blue' },
-                    { label: 'STAGE 3 (8x)', filled: calculateFilled(mCounts[2].toNumber(), 8), total: 8, color: 'pool-bar-blue' },
-                    { label: 'STAGE 4 (16x)', filled: calculateFilled(mCounts[3].toNumber(), 16), total: 16, color: 'pool-bar-blue' },
-                    { label: 'STAGE 5 (32x)', filled: calculateFilled(mCounts[4].toNumber(), 32), total: 32, color: 'pool-bar-blue' },
-                    { label: 'STAGE 6 (64x)', filled: calculateFilled(mCounts[5].toNumber(), 64), total: 64, color: 'pool-bar-blue' }
+                    { label: 'STAGE 1 (2x)', filled: calculateFilled(mCounts[0], 2), total: 2, color: 'pool-bar-blue' },
+                    { label: 'STAGE 2 (4x)', filled: calculateFilled(mCounts[1], 4), total: 4, color: 'pool-bar-blue' },
+                    { label: 'STAGE 3 (8x)', filled: calculateFilled(mCounts[2], 8), total: 8, color: 'pool-bar-blue' },
+                    { label: 'STAGE 4 (16x)', filled: calculateFilled(mCounts[3], 16), total: 16, color: 'pool-bar-blue' },
+                    { label: 'STAGE 5 (32x)', filled: calculateFilled(mCounts[4], 32), total: 32, color: 'pool-bar-blue' },
+                    { label: 'STAGE 6 (64x)', filled: calculateFilled(mCounts[5], 64), total: 64, color: 'pool-bar-blue' }
                 ];
                 renderSection('magic-pool-status', magicData);
 
-                // --- 2. CLUB DATA ---
+                // Club Mapping
                 const clubData = [
-                    { label: 'CLUB 1', filled: calculateFilled(cCounts[0].toNumber(), 2), total: 2, color: 'pool-bar-yellow' },
-                    { label: 'CLUB 2', filled: calculateFilled(cCounts[1].toNumber(), 2), total: 2, color: 'pool-bar-yellow' },
-                    { label: 'CLUB 3', filled: calculateFilled(cCounts[2].toNumber(), 2), total: 2, color: 'pool-bar-yellow' },
-                    { label: 'CLUB 4', filled: calculateFilled(cCounts[3].toNumber(), 2), total: 2, color: 'pool-bar-yellow' }
+                    { label: 'CLUB 1', filled: calculateFilled(cCounts[0], 2), total: 2, color: 'pool-bar-gold' },
+                    { label: 'CLUB 2', filled: calculateFilled(cCounts[1], 2), total: 2, color: 'pool-bar-gold' },
+                    { label: 'CLUB 3', filled: calculateFilled(cCounts[2], 2), total: 2, color: 'pool-bar-gold' },
+                    { label: 'CLUB 4', filled: calculateFilled(cCounts[3], 2), total: 2, color: 'pool-bar-gold' }
                 ];
                 renderSection('club-status', clubData);
 
-                // --- 3. GT TABLE DATA ---
+                // GT Table Mapping
                 const gtData = [
-                    { label: 'TABLE GT-1', filled: calculateFilled(gCounts[0].toNumber(), 2), total: 2, color: 'pool-bar-purple' },
-                    { label: 'TABLE GT-2', filled: calculateFilled(gCounts[1].toNumber(), 2), total: 2, color: 'pool-bar-purple' },
-                    { label: 'TABLE GT-3', filled: calculateFilled(gCounts[2].toNumber(), 2), total: 2, color: 'pool-bar-purple' }
+                    { label: 'TABLE GT-1', filled: calculateFilled(gCounts[0], 2), total: 2, color: 'pool-bar-purple' },
+                    { label: 'TABLE GT-2', filled: calculateFilled(gCounts[1], 2), total: 2, color: 'pool-bar-purple' },
+                    { label: 'TABLE GT-3', filled: calculateFilled(gCounts[2], 2), total: 2, color: 'pool-bar-purple' }
                 ];
                 renderSection('gt-status', gtData);
 
-                // Refresh every 15 seconds for live feel
-                setTimeout(updateMatrixUI, 15000);
-
-            } catch (e) { 
-                console.error("UI Update Error:", e);
-                setTimeout(updateMatrixUI, 5000); // Retry after error
+                lucide.createIcons();
+            } catch (e) {
+                console.error("Matrix Update Failed:", e);
             }
+            setTimeout(updateLiveUI, 15000);
         }
 
         function renderSection(id, items) {
             const container = document.getElementById(id);
             if(!container) return;
-            container.innerHTML = '';
-            
-            items.forEach(item => {
+            container.innerHTML = items.map(item => {
                 const pct = (item.filled / item.total) * 100;
-                const pending = item.total - item.filled;
-                const isFull = (pct === 100 && item.filled > 0);
-
-                container.innerHTML += `
-                    <div class="group">
-                        <div class="flex justify-between items-end mb-2">
-                            <span class="text-[10px] font-black orbitron ${isFull ? 'text-green-500' : 'text-gray-400'} tracking-wider">${item.label}</span>
-                            <span class="text-[11px] font-bold orbitron text-white">${item.filled} <span class="text-gray-600">/ ${item.total}</span></span>
+                const isFull = (pct === 100);
+                return `
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-end">
+                            <span class="text-[10px] font-black orbitron ${isFull ? 'text-green-500' : 'text-gray-400'} uppercase tracking-widest">${item.label}</span>
+                            <span class="text-[11px] font-bold orbitron text-white">${item.filled}<span class="text-gray-600">/${item.total}</span></span>
                         </div>
-                        <div class="h-2 bg-white/5 rounded-full overflow-hidden p-[1px] border border-white/5">
+                        <div class="h-2 bg-white/5 rounded-full overflow-hidden p-[1px] border border-white/10">
                             <div class="h-full rounded-full transition-all duration-1000 ${item.color}" style="width: ${pct}%"></div>
                         </div>
-                        <div class="flex justify-between mt-1 px-1">
-                            <span class="text-[8px] font-bold uppercase italic ${isFull ? 'text-green-500' : 'text-gray-600'}">
-                                ${isFull ? 'STAGE RE-FILLING...' : pending + ' Users to Next Move'}
+                        <div class="flex justify-between items-center px-1">
+                            <span class="text-[8px] font-bold italic ${isFull ? 'text-green-500' : 'text-gray-600'} uppercase">
+                                ${isFull ? '● Re-filling Cycle' : (item.total - item.filled) + ' Users to move'}
                             </span>
-                            <span class="text-[8px] font-bold text-gray-700">${Math.round(pct)}%</span>
+                            <span class="text-[9px] font-black text-white/40">${Math.round(pct)}%</span>
                         </div>
-                    </div>
-                `;
-            });
+                    </div>`;
+            }).join('');
         }
 
-        window.addEventListener('load', updateMatrixUI);
+        window.addEventListener('load', () => {
+            lucide.createIcons();
+            updateLiveUI();
+        });
     </script>
 </body>
 </html>
