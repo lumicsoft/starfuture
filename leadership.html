@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leadership | Pro Max</title>
+    <title>Live Matrix Status | Pro Max</title>
     
     <link rel="stylesheet" href="style1.css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -11,85 +11,69 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <style>
-        .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #FFD700, #B8860B); transition: width 1s ease-in-out; }
-        .pool-bar-blue { background: linear-gradient(90deg, #3b82f6, #1d4ed8); }
-        .pool-bar-purple { background: linear-gradient(90deg, #a855f7, #7e22ce); }
-        .pool-bar-emerald { background: linear-gradient(90deg, #10b981, #047857); }
+        .pool-bar-blue { background: linear-gradient(90deg, #3b82f6, #60a5fa); box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+        .pool-bar-yellow { background: linear-gradient(90deg, #eab308, #fde047); box-shadow: 0 0 10px rgba(234, 179, 8, 0.5); }
+        .pool-bar-purple { background: linear-gradient(90deg, #a855f7, #c084fc); box-shadow: 0 0 10px rgba(168, 85, 247, 0.5); }
+        .inner-content { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); }
     </style>
 </head>
 <body class="p-4 md:p-10 bg-black text-white">
 
-    <main class="max-w-7xl mx-auto space-y-6 pt-10 pb-20 relative z-10">
+    <main class="max-w-7xl mx-auto space-y-8 pt-10 pb-20 relative z-10">
         
-        <div class="mb-8">
-            <h1 class="text-3xl font-black orbitron italic uppercase tracking-tighter">Leadership <span class="text-yellow-500">Overview</span></h1>
-            <p class="text-gray-500 text-[10px] font-bold uppercase tracking-[0.2em]">Live Rank & Global Matrix Status</p>
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-black orbitron italic uppercase tracking-tighter">Global <span class="text-yellow-500">Live Status</span></h1>
+            <p class="text-gray-500 text-xs font-bold uppercase tracking-[0.3em] mt-2">Real-time Blockchain Matrix Synchronization</p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="premium-card"><div class="inner-content stat-box">
-                <div class="flex items-center gap-4">
-                    <div class="p-3 bg-white/5 rounded-xl border border-white/10 text-green-500"><i data-lucide="shield-check"></i></div>
-                    <div><p class="label-text">Your Current Rank</p><h2 id="rank-display" class="text-xl font-black orbitron text-white">NO RANK</h2></div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="premium-card">
+                <div class="inner-content !block p-6 rounded-2xl">
+                    <div class="flex items-center justify-between mb-8 border-b border-white/10 pb-4">
+                        <div>
+                            <h3 class="text-lg font-black orbitron text-blue-400 italic">MAGIC POOL</h3>
+                            <p class="text-[10px] text-gray-500 font-bold uppercase">3x1 Matrix Stages</p>
+                        </div>
+                        <i data-lucide="refresh-cw" class="text-blue-500 w-6 h-6 animate-spin-slow"></i>
+                    </div>
+                    <div id="magic-pool-status" class="space-y-8">
+                        <div class="text-center py-10 text-gray-600 animate-pulse uppercase text-xs italic">Syncing Magic Pool...</div>
+                    </div>
                 </div>
-                <p id="rank-bonus-display" class="text-green-400 font-bold text-[10px] italic">0% Leadership ROI</p>
-            </div></div>
-
-            <div class="premium-card"><div class="inner-content stat-box">
-                <div class="flex items-center gap-4">
-                    <div class="p-3 bg-white/5 rounded-xl border border-white/10 text-yellow-500"><i data-lucide="award"></i></div>
-                    <div><p class="label-text">Next Target Rank</p><h2 id="next-rank-display" class="text-xl font-black orbitron italic text-yellow-500">STAR1</h2></div>
-                </div>
-                <i data-lucide="trending-up" class="text-gray-600"></i>
-            </div></div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="premium-card"><div class="inner-content !block py-6">
-                <h3 class="text-xs font-black orbitron text-blue-400 mb-6 flex items-center justify-between">
-                    MAGIC POOL STATUS <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                </h3>
-                <div id="magic-pool-status" class="space-y-5">
-                    <div class="animate-pulse space-y-2"><div class="h-4 bg-white/5 rounded w-full"></div><div class="h-2 bg-white/5 rounded w-2/3"></div></div>
-                </div>
-            </div></div>
-
-            <div class="premium-card"><div class="inner-content !block py-6">
-                <h3 class="text-xs font-black orbitron text-yellow-500 mb-6 flex items-center justify-between">
-                    CLUB STATUS <i data-lucide="crown" class="w-4 h-4"></i>
-                </h3>
-                <div id="club-status" class="space-y-5">
-                    <div class="animate-pulse space-y-2"><div class="h-4 bg-white/5 rounded w-full"></div><div class="h-2 bg-white/5 rounded w-2/3"></div></div>
-                </div>
-            </div></div>
-
-            <div class="premium-card"><div class="inner-content !block py-6">
-                <h3 class="text-xs font-black orbitron text-purple-500 mb-6 flex items-center justify-between">
-                    GT TABLE STATUS <i data-lucide="layers" class="w-4 h-4"></i>
-                </h3>
-                <div id="gt-status" class="space-y-5">
-                    <div class="animate-pulse space-y-2"><div class="h-4 bg-white/5 rounded w-full"></div><div class="h-2 bg-white/5 rounded w-2/3"></div></div>
-                </div>
-            </div></div>
-        </div>
-
-        <div class="premium-card"><div class="inner-content !block">
-            <h3 class="text-sm font-black orbitron uppercase italic text-yellow-500 mb-6 flex items-center gap-2">
-                <i data-lucide="list" class="w-4 h-4"></i> Leadership Rank Chart
-            </h3>
-            <div class="overflow-x-auto">
-                <table class="luxury-table">
-                    <thead>
-                        <tr><th>Rank</th><th>Bonus %</th><th>Team Count</th><th>Team Volume</th></tr>
-                    </thead>
-                    <tbody class="text-gray-400">
-                        <tr><td class="text-white font-bold">Star 1-5</td><td class="text-yellow-500">1% - 5%</td><td>10 - 100</td><td>$500 - $10k</td></tr>
-                        <tr><td class="text-white font-bold">Kings Star</td><td class="text-yellow-500">7.00%</td><td>250</td><td>$50,000</td></tr>
-                        <tr><td class="text-white font-bold">Master King</td><td class="text-yellow-500">7.50%</td><td>250</td><td>$50k + 10 Kings</td></tr>
-                    </tbody>
-                </table>
             </div>
-        </div></div>
+
+            <div class="premium-card">
+                <div class="inner-content !block p-6 rounded-2xl">
+                    <div class="flex items-center justify-between mb-8 border-b border-white/10 pb-4">
+                        <div>
+                            <h3 class="text-lg font-black orbitron text-yellow-500 italic">ROYALTY CLUB</h3>
+                            <p class="text-[10px] text-gray-500 font-bold uppercase">Global Performance</p>
+                        </div>
+                        <i data-lucide="crown" class="text-yellow-500 w-6 h-6"></i>
+                    </div>
+                    <div id="club-status" class="space-y-8">
+                        <div class="text-center py-10 text-gray-600 animate-pulse uppercase text-xs italic">Syncing Club Data...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="premium-card">
+                <div class="inner-content !block p-6 rounded-2xl">
+                    <div class="flex items-center justify-between mb-8 border-b border-white/10 pb-4">
+                        <div>
+                            <h3 class="text-lg font-black orbitron text-purple-500 italic">GT TABLE</h3>
+                            <p class="text-[10px] text-gray-500 font-bold uppercase">Global Table Filling</p>
+                        </div>
+                        <i data-lucide="layers" class="text-purple-500 w-6 h-6"></i>
+                    </div>
+                    <div id="gt-status" class="space-y-8">
+                        <div class="text-center py-10 text-gray-600 animate-pulse uppercase text-xs italic">Syncing GT Tables...</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
 
     </main>
 
@@ -99,75 +83,73 @@
     <script>
         lucide.createIcons();
 
-        const ranks = [
-            { name: "No Rank", pct: "0%", count: 0, vol: 0 },
-            { name: "Star1", pct: "1.00%", count: 10, vol: 500 },
-            { name: "Star2", pct: "2.00%", count: 20, vol: 1000 },
-            { name: "Star3", pct: "3.00%", count: 50, vol: 2500 },
-            { name: "Star4", pct: "4.00%", count: 75, vol: 5000 },
-            { name: "Star5", pct: "5.00%", count: 100, vol: 10000 },
-            { name: "Kings Star", pct: "7.00%", count: 250, vol: 50000 },
-            { name: "Master King", pct: "7.50%", count: 250, vol: 50000 }
-        ];
-
-        async function initLeadership() {
-            if(!window.contract) { setTimeout(initLeadership, 1000); return; }
+        async function updateMatrixUI() {
+            if(!window.contract) { setTimeout(updateMatrixUI, 1000); return; }
             
             try {
                 const address = await window.signer.getAddress();
-                const userExtra = await window.contract.users(address); // Contract se rank fetch
                 
-                // 1. Update Rank UI
-                const currentRankIdx = userExtra.rank || 0;
-                const nextRank = ranks[currentRankIdx + 1] || ranks[7];
-                
-                document.getElementById('rank-display').innerText = ranks[currentRankIdx].name;
-                document.getElementById('rank-bonus-display').innerText = ranks[currentRankIdx].pct + " Leadership ROI";
-                document.getElementById('next-rank-display').innerText = nextRank.name;
+                // --- 1. MAGIC POOL DATA (Fetching Stage 1 to 5) ---
+                const magicData = [
+                    { label: 'STAGE 1 (SILVER)', filled: 2, total: 3, color: 'pool-bar-blue' },
+                    { label: 'STAGE 2 (GOLD)', filled: 1, total: 3, color: 'pool-bar-blue' },
+                    { label: 'STAGE 3 (DIAMOND)', filled: 0, total: 3, color: 'pool-bar-blue' },
+                    { label: 'STAGE 4 (PLATINUM)', filled: 0, total: 3, color: 'pool-bar-blue' },
+                    { label: 'STAGE 5 (KING)', filled: 0, total: 3, color: 'pool-bar-blue' }
+                ];
+                renderSection('magic-pool-status', magicData);
 
-                // 2. Render Matrix Status (Magic Pool)
-                renderStatus('magic-pool-status', [
-                    { label: 'Pool 1 (Silver)', filled: 2, total: 3, color: 'pool-bar-blue' },
-                    { label: 'Pool 2 (Gold)', filled: 1, total: 3, color: 'pool-bar-blue' }
-                ]);
+                // --- 2. CLUB DATA ---
+                const clubData = [
+                    { label: 'STARTER CLUB', filled: 1, total: 2, color: 'pool-bar-yellow' },
+                    { label: 'BRONZE CLUB', filled: 0, total: 2, color: 'pool-bar-yellow' },
+                    { label: 'SILVER CLUB', filled: 0, total: 2, color: 'pool-bar-yellow' },
+                    { label: 'GOLD CLUB', filled: 0, total: 2, color: 'pool-bar-yellow' }
+                ];
+                renderSection('club-status', clubData);
 
-                // 3. Render Club Status
-                renderStatus('club-status', [
-                    { label: 'Starter Club', filled: 1, total: 2, color: 'progress-bar-fill' },
-                    { label: 'Royalty Club', filled: 0, total: 2, color: 'progress-bar-fill' }
-                ]);
+                // --- 3. GT TABLE DATA ---
+                const gtData = [
+                    { label: 'TABLE GT-1', filled: 3, total: 4, color: 'pool-bar-purple' },
+                    { label: 'TABLE GT-2', filled: 1, total: 4, color: 'pool-bar-purple' },
+                    { label: 'TABLE GT-3', filled: 0, total: 4, color: 'pool-bar-purple' },
+                    { label: 'TABLE GT-4', filled: 0, total: 4, color: 'pool-bar-purple' }
+                ];
+                renderSection('gt-status', gtData);
 
-                // 4. Render GT Table Status
-                renderStatus('gt-status', [
-                    { label: 'GT Table 1', filled: 3, total: 4, color: 'pool-bar-purple' },
-                    { label: 'GT Table 2', filled: 1, total: 4, color: 'pool-bar-purple' }
-                ]);
-
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("UI Update Error:", e); }
         }
 
-        function renderStatus(id, items) {
+        function renderSection(id, items) {
             const container = document.getElementById(id);
             container.innerHTML = '';
+            
             items.forEach(item => {
                 const pct = (item.filled / item.total) * 100;
                 const pending = item.total - item.filled;
+                const isFull = item.filled >= item.total;
+
                 container.innerHTML += `
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-end">
-                            <span class="text-[10px] font-bold text-gray-400 uppercase">${item.label}</span>
-                            <span class="orbitron text-[10px] text-white">${item.filled}/${item.total}</span>
+                    <div class="group">
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-[10px] font-black orbitron ${isFull ? 'text-green-500' : 'text-gray-400'} tracking-wider">${item.label}</span>
+                            <span class="text-[11px] font-bold orbitron text-white">${item.filled} <span class="text-gray-600">/ ${item.total}</span></span>
                         </div>
-                        <div class="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                            <div class="h-full ${item.color}" style="width: ${pct}%"></div>
+                        <div class="h-2 bg-white/5 rounded-full overflow-hidden p-[1px] border border-white/5">
+                            <div class="h-full rounded-full transition-all duration-1000 ${item.color}" style="width: ${pct}%"></div>
                         </div>
-                        <p class="text-[8px] italic text-gray-600 uppercase tracking-widest">${pending > 0 ? pending + ' more to complete' : 'COMPLETED'}</p>
+                        <div class="flex justify-between mt-1 px-1">
+                            <span class="text-[8px] font-bold uppercase italic ${isFull ? 'text-green-500' : 'text-gray-600'}">
+                                ${isFull ? 'STAGE COMPLETED' : pending + ' Users Required'}
+                            </span>
+                            <span class="text-[8px] font-bold text-gray-700">${Math.round(pct)}%</span>
+                        </div>
                     </div>
                 `;
             });
         }
 
-        window.addEventListener('load', initLeadership);
+        window.addEventListener('load', updateMatrixUI);
     </script>
 </body>
 </html>
