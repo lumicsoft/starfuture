@@ -305,7 +305,80 @@ async function fetchUserHistory(address) {
         `).join('');
     } catch (e) { console.error(e); }
 }
+async function updateLiveMatrixStatus() {
+    if (!window.contract) return;
 
+    try {
+        // 1. Contract se saare counts ek saath mangwayein
+        const magicCounts = await window.contract.getMagicPoolCounts();
+        const clubCounts = await window.contract.getClubCounts();
+        const gtCounts = await window.contract.getGTCounts();
+
+        // 2. MAGIC POOL RENDER (Stage 1 to 3 dikhane ke liye)
+        const magicStages = [
+            { label: "Stage 1", count: magicCounts[0].toNumber(), target: 2 },
+            { label: "Stage 2", count: magicCounts[1].toNumber(), target: 4 },
+            { label: "Stage 3", count: magicCounts[2].toNumber(), target: 8 }
+        ];
+        renderMatrixGroup('magic-pool-status', magicStages, 'blue');
+
+        // 3. CLUB POOL RENDER
+        const clubStages = [
+            { label: "Club 1", count: clubCounts[0].toNumber(), target: 2 },
+            { label: "Club 2", count: clubCounts[1].toNumber(), target: 2 }
+        ];
+        renderMatrixGroup('club-status', clubStages, 'yellow');
+
+        // 4. GT TABLE RENDER
+        const gtStages = [
+            { label: "GT 1", count: gtCounts[0].toNumber(), target: 2 },
+            { label: "GT 2", count: gtCounts[1].toNumber(), target: 2 }
+        ];
+        renderMatrixGroup('gt-status', gtStages, 'purple');
+
+    } catch (error) {
+        console.error("Live Matrix Update Error:", error);
+    }
+}
+
+// UI Render Function
+function renderMatrixGroup(containerId, stages, colorTheme) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    let html = '';
+    const colors = {
+        blue: 'from-blue-600 to-cyan-400',
+        yellow: 'from-yellow-600 to-orange-400',
+        purple: 'from-purple-600 to-pink-400'
+    };
+
+    stages.forEach(s => {
+        // Modulo logic: Kitne log current cycle mein hain
+        let currentLevelFill = s.count % s.target;
+        // Agar full ho gaya toh 100% dikhane ke liye
+        if (s.count > 0 && currentLevelFill === 0) currentLevelFill = s.target; 
+        
+        const percentage = (currentLevelFill / s.target) * 100;
+
+        html += `
+            <div class="mb-4">
+                <div class="flex justify-between text-[11px] orbitron mb-1">
+                    <span class="text-gray-400 uppercase font-bold">${s.label}</span>
+                    <span class="text-white">${currentLevelFill}/${s.target}</span>
+                </div>
+                <div class="h-2 bg-white/5 rounded-full border border-white/10 p-[1px]">
+                    <div class="h-full bg-gradient-to-r ${colors[colorTheme]} rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(255,255,255,0.1)]" 
+                         style="width: ${percentage}%"></div>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+// Har 15 seconds mein auto-refresh
+setInterval(updateLiveMatrixStatus, 15000);
 async function fetchLevelTeam(address) {
     try {
         const container = document.getElementById('level-team-data');
@@ -337,6 +410,7 @@ function updateNavbar(addr) {
 }
 
 window.addEventListener('load', init);
+
 
 
 
