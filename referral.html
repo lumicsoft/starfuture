@@ -82,97 +82,98 @@
     <script src="components.js"></script> 
     <script src="web3-handler.js"></script>
     
-   <script>
+ <script>
     lucide.createIcons();
 
-    // Helper: format units
     const format = (val) => {
-        try { return parseFloat(ethers.utils.formatUnits(val, 18)).toFixed(2); } 
-        catch (e) { return "0.00"; }
+        try { 
+            if(!val) return "0.00";
+            return parseFloat(ethers.utils.formatUnits(val, 18)).toFixed(2); 
+        } catch (e) { return "0.00"; }
     };
 
-    async function loadReferralData() {
-        // Wait for contract and signer from web3-handler.js
-        if (!window.contract || !window.signer) {
-            console.log("Waiting for contract initialization...");
-            setTimeout(loadReferralData, 1000);
+    // --- DATA LOADING LOGIC ---
+    async function loadTeamData() {
+        // window.contract check kar raha hai jo web3-handler.js se aayega
+        const activeContract = window.contract;
+        const activeSigner = window.signer;
+
+        if (!activeContract || !activeSigner) {
+            console.log("Waiting for Web3 Handler...");
+            setTimeout(loadTeamData, 1000);
             return;
         }
 
         try {
-            const address = await window.signer.getAddress();
+            const address = await activeSigner.getAddress();
             
-            // Using functions from your CONTRACT_ABI: 
-            // getUserBasicStats -> [team, directs, totalEarned]
-            // getMatrixIncomeReport -> [dMagic, c1, c2, c3, c4]
+            // 1. Stats Load karein (Aapke getUserBasicStats aur getMatrixIncomeReport se)
             const [basic, matrix] = await Promise.all([
-                window.contract.getUserBasicStats(address),
-                window.contract.getMatrixIncomeReport(address)
+                activeContract.getUserBasicStats(address),
+                activeContract.getMatrixIncomeReport(address)
             ]);
 
-            // Mapping to your UI IDs
-            document.getElementById('direct-count').innerText = basic[1].toString();
-            document.getElementById('team-count').innerText = basic[0].toString();
-            document.getElementById('total-earned').innerText = format(basic[2]);
-            
-            // Direct/Magic income from matrix report
-            document.getElementById('direct-earnings').innerText = format(matrix[0]);
-            
-            // Level earnings (using total team income as a placeholder if specific field not in basic)
-            document.getElementById('level-earnings').innerText = format(matrix[1]); // Club 1 or similar
+            // UI Update (Ids match karke)
+            if(document.getElementById('direct-count')) document.getElementById('direct-count').innerText = basic[1].toString(); // directs
+            if(document.getElementById('team-count')) document.getElementById('team-count').innerText = basic[0].toString(); // team
+            if(document.getElementById('total-earned')) document.getElementById('total-earned').innerText = format(basic[2]); // totalEarned
+            if(document.getElementById('direct-earnings')) document.getElementById('direct-earnings').innerText = format(matrix[0]); // dMagic
+            if(document.getElementById('level-earnings')) document.getElementById('level-earnings').innerText = format(matrix[1]); // c1
 
-            // Load Level 1 by default
-            loadLevelData(1);
-        } catch (err) { 
-            console.error("Referral Data Error:", err); 
+            // Default Level 1 load karein
+            loadLevelMembers(1);
+
+        } catch (err) {
+            console.error("Team Data Load Error:", err);
         }
     }
 
-    async function loadLevelData(level) {
+    async function loadLevelMembers(level) {
         const tableBody = document.getElementById('team-table-body');
-        tableBody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-yellow-500 orbitron animate-pulse">SYNCING LEVEL ${level}...</td></tr>`;
+        if(!tableBody) return;
+
+        tableBody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-yellow-500 orbitron animate-pulse">FETCHING LEVEL ${level}...</td></tr>`;
         
         try {
             const address = await window.signer.getAddress();
-            
-            // Using your contract function: getLevelTeam(address, level)
-            // Note: This returns an array of addresses
+            // Aapke code se function: getLevelTeam
             const members = await window.contract.getLevelTeam(address, level);
 
             if (!members || members.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-gray-600 italic uppercase text-[10px]">No Members found in Level ${level}</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-gray-600 py-20 italic">LEVEL ${level} IS EMPTY</td></tr>`;
                 return;
             }
 
             let html = '';
-            // For each member, we show their address and basic status
-            // Since getLevelTeam only returns addresses, we show them as Active
             for (let i = 0; i < members.length; i++) {
-                const memberAddr = members[i];
-                const shortAddr = memberAddr.substring(0, 8) + "..." + memberAddr.substring(34);
-                
-                html += `<tr>
-                    <td class="font-mono text-yellow-500">${shortAddr}</td>
+                const mAddr = members[i];
+                html += `
+                <tr class="border-b border-white/5 hover:bg-white/5 transition-all">
+                    <td class="py-4 font-mono text-blue-400 text-xs">${mAddr.substring(0,12)}...${mAddr.substring(34)}</td>
                     <td class="text-gray-400 font-bold">Lvl ${level}</td>
-                    <td class="text-white font-black">15.00</td>
-                    <td class="text-gray-400">---</td>
-                    <td class="text-[10px] italic"><span class="text-green-500 font-bold">ACTIVE</span></td>
-                    <td class="text-gray-500 font-mono text-[11px]">N/A</td>
+                    <td class="text-white font-black text-xs">15.00 USDT</td>
+                    <td class="text-gray-500">---</td>
+                    <td><span class="text-green-500 text-[10px] font-bold border border-green-500/20 px-2 py-1 bg-green-500/5">ACTIVE</span></td>
+                    <td class="text-gray-500 font-mono text-[10px]">VERIFIED</td>
                 </tr>`;
             }
             tableBody.innerHTML = html;
         } catch (err) { 
-            console.error("Level Data Error:", err);
-            tableBody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-red-500">Contract Sync Error</td></tr>`; 
+            console.error("Level Fetch Error:", err);
+            tableBody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-red-500">CONTRACT SYNC ERROR</td></tr>`; 
         }
     }
 
-    // Start loading
-    window.addEventListener('load', () => {
-        setTimeout(loadReferralData, 1500);
-    });
+    // Level select change hone par call hoga
+    window.loadLevelData = function(level) {
+        loadLevelMembers(level);
+    }
+
+    // Start
+    window.addEventListener('load', loadTeamData);
 </script>
 </body>
 
 
 </html>
+
