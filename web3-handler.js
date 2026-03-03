@@ -1,4 +1,4 @@
-let provider, signer, contract;
+let provider, signer, contract, userAddress;
 
 // --- CONFIGURATION ---
 const CONTRACT_ADDRESS = "0x0ffdA42a922aDbB3ACd26a532B0A40Cc42b3a520"; 
@@ -198,40 +198,40 @@ window.handleLogout = function() {
 
 // --- SETUP APP ---
 async function setupApp(address) {
-    try {
-        // Add small check for contract initialization
-        if (!window.contract) {
-            window.contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-        }
-        const isRegistered = await window.contract.isRegistered(address);
-        const path = window.location.pathname;
-        window.userData = { isRegistered };
+    try {
+        window.userAddress = address; // Global variable set karein
+        if (!window.contract) {
+            window.contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        }
+        
+        const isRegistered = await window.contract.isRegistered(address);
+        const path = window.location.pathname;
+        window.userData = { isRegistered };
 
-        if (!isRegistered && !path.includes('register.html') && !path.includes('login.html')) {
-            window.location.href = "register.html";
-            return;
-        }
-        
-        updateNavbar(address);
-        const logoutIcon = document.getElementById('logout-icon-btn');
-        if (logoutIcon) logoutIcon.style.display = 'flex';
-
-        if (path.includes('index1.html')) {
-            setTimeout(() => fetchAllData(address), 300);
-            setTimeout(() => updateLiveMatrixStatus(), 500); 
-        }
-        if (path.includes('leadership.html')) {
-            setTimeout(() => fetchLeadershipData(address), 300);
-        }
-        if (path.includes('history.html')) {
-            setTimeout(() => fetchUserHistory(address), 300);
-        }
-        if (path.includes('team.html')) {
-            setTimeout(() => fetchLevelTeam(address), 300);
-        }
-    } catch (err) { console.error("Setup Error", err); }
+        if (!isRegistered && !path.includes('register.html') && !path.includes('login.html')) {
+            window.location.href = "register.html";
+            return;
+        }
+        
+        updateNavbar(address);
+        
+        // --- Page Specific Data Loading ---
+        if (path.includes('index1.html')) {
+            setTimeout(() => fetchAllData(address), 300);
+            setTimeout(() => updateLiveMatrixStatus(), 500); 
+        }
+        if (path.includes('history.html')) {
+            // Yahan 500ms ka delay contract initialization ke liye safe hai
+            setTimeout(() => fetchUserHistory(address, 'all'), 500);
+        }
+        if (path.includes('leadership.html')) {
+            setTimeout(() => fetchLeadershipData(address), 300);
+        }
+        if (path.includes('team.html')) {
+            setTimeout(() => fetchLevelTeam(address), 300);
+        }
+    } catch (err) { console.error("Setup Error", err); }
 }
-
 async function fetchAllData(address) {
     try {
         const activeContract = window.contract || contract;
@@ -303,21 +303,25 @@ async function fetchLeadershipData(address) {
 
 async function fetchUserHistory(address, category = 'all') {
     try {
-        const container = document.getElementById('history-container'); // Correct ID for your UI
+        const container = document.getElementById('history-container');
         if (!container) return;
 
-        // Fetch from contract
-        const history = await contract.getUserHistory(address);
+        // Loading state (optional but looks good)
+        container.innerHTML = `<div class="text-center py-20 opacity-30 animate-pulse font-bold orbitron text-[10px]">SYNCING WITH BLOCKCHAIN...</div>`;
+
+        const history = await window.contract.getUserHistory(address);
         
         if (!history || history.length === 0) {
             container.innerHTML = `<div class="text-center py-20 opacity-30 italic font-bold orbitron text-[10px]">NO TRANSACTIONS FOUND</div>`;
             return;
         }
 
-        // Filtering logic for Income, Withdrawal, Reward
+        // --- SAFE FILTERING ---
         const filtered = [...history].filter(tx => {
             if (category === 'all') return true;
-            return tx.txType.toLowerCase().includes(category.toLowerCase());
+            // Convert to string safely to avoid .toLowerCase() errors
+            const typeStr = String(tx.txType || "").toLowerCase();
+            return typeStr.includes(category.toLowerCase());
         }).reverse();
 
         if (filtered.length === 0) {
@@ -325,19 +329,18 @@ async function fetchUserHistory(address, category = 'all') {
             return;
         }
 
-        // Mapping to your Premium Card UI
         container.innerHTML = filtered.map(tx => {
-            const type = tx.txType.toLowerCase();
+            const typeRaw = String(tx.txType || "Other");
+            const type = typeRaw.toLowerCase();
             const amount = parseFloat(ethers.utils.formatEther(tx.amount)).toFixed(2);
             const date = new Date(tx.timestamp.toNumber() * 1000).toLocaleDateString();
             const time = new Date(tx.timestamp.toNumber() * 1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
             
-            // Icon Selection
             let icon = 'arrow-right-circle';
             let color = 'text-yellow-500';
-            if(type.includes('income')) { icon = 'trending-up'; }
+            if(type.includes('income')) { icon = 'trending-up'; color = 'text-green-500'; }
             if(type.includes('withdraw')) { icon = 'external-link'; color = 'text-red-500'; }
-            if(type.includes('reward')) { icon = 'award'; }
+            if(type.includes('reward')) { icon = 'award'; color = 'text-blue-500'; }
 
             return `
             <div class="premium-card mb-2"> 
@@ -347,7 +350,7 @@ async function fetchUserHistory(address, category = 'all') {
                             <i data-lucide="${icon}" class="w-4 h-4 ${color}"></i>
                         </div>
                         <div>
-                            <p class="text-[10px] font-black orbitron text-white uppercase tracking-tighter">${tx.txType}</p>
+                            <p class="text-[10px] font-black orbitron text-white uppercase tracking-tighter">${typeRaw}</p>
                             <p class="text-[9px] font-bold text-gray-500 mt-0.5 uppercase">${tx.detail}</p>
                             <p class="text-[7px] text-gray-600 mt-0.5">${date} | ${time}</p>
                         </div>
@@ -362,13 +365,12 @@ async function fetchUserHistory(address, category = 'all') {
             </div>`;
         }).join('');
 
-        // Refresh icons
         if(window.lucide) lucide.createIcons();
 
     } catch (e) { 
         console.error("History Error:", e);
         const container = document.getElementById('history-container');
-        if(container) container.innerHTML = `<div class="text-center py-20 text-red-800 text-[10px] orbitron font-bold tracking-widest">CONTRACT ERROR: RETRYING...</div>`;
+        if(container) container.innerHTML = `<div class="text-center py-20 text-red-800 text-[10px] orbitron font-bold tracking-widest">BLOCKCHAIN ERROR: PLEASE REFRESH</div>`;
     }
 }
 
@@ -486,6 +488,7 @@ function updateNavbar(addr) {
 }
 
 window.addEventListener('load', init);
+
 
 
 
