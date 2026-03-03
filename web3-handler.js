@@ -6,7 +6,7 @@ const USDT_TOKEN_ADDRESS = "0x3b66b1e08f55af26c8ea14a73da64b6bc8d799de"; // BSC 
 const TESTNET_CHAIN_ID = 97; 
 const REGISTRATION_FEE = "15";
 
-// --- RANK CONFIG --- (Aapne pichle message mein diya tha, isse rakha hai)
+// --- RANK CONFIG ---
 const RANK_DETAILS = [
     { name: "NONE", roi: "0%", targetTeam: 0, targetVolume: 0 },
     { name: "Star1", roi: "1.00%", targetTeam: 1, targetVolume: 5 },
@@ -18,7 +18,7 @@ const RANK_DETAILS = [
     { name: "Master King", roi: "7.50%", targetTeam: 7, targetVolume: 1000 }
 ];
 
-// --- ABI (Exactly same + 2 new functions for History & Team) ---
+// --- ABI (Exactly same + 2 history functions + 3 matrix functions) ---
 const CONTRACT_ABI = [
     "function register(address _ref) external",
     "function withdraw(uint256 _amt) external",
@@ -33,8 +33,13 @@ const CONTRACT_ABI = [
     "function getMatrixIncomeReport(address _user) external view returns (uint256 dMagic, uint256 c1, uint256 c2, uint256 c3, uint256 c4)",
     "function getAdvancedIncomeReport(address _user) external view returns (uint256 g1, uint256 g2, uint256 g3, uint256 rwd)",
     "function getUserHistory(address _user) external view returns (tuple(string txType, uint256 amount, string detail, uint256 timestamp)[])",
-    "function getLevelTeam(address _account, uint256 _level) external view returns (address[] memory)"
+    "function getLevelTeam(address _account, uint256 _level) external view returns (address[] memory)",
+    // NEW MATRIX SYNC FUNCTIONS
+    "function getMagicPoolCounts() external view returns (uint256[6])",
+    "function getClubCounts() external view returns (uint256[4])",
+    "function getGTCounts() external view returns (uint256[3])"
 ];
+
 const ERC20_ABI = ["function approve(address spender, uint256 amount) public returns (bool)", "function allowance(address owner, address spender) public view returns (uint256)"];
 
 const calculateGlobalROI = () => 0.90;
@@ -69,6 +74,7 @@ async function init() {
         } catch (error) { console.error("Init Error", error); }
     } else { alert("Wallet not detected!"); }
 }
+
 window.checkWalletSilently = async function() {
     if (window.ethereum) {
         const accounts = await window.ethereum.request({ method: 'eth_accounts' });
@@ -77,7 +83,7 @@ window.checkWalletSilently = async function() {
     return null;
 };
 
-// --- CORE LOGIC (UNTOUCHED) ---
+// --- CORE LOGIC ---
 
 window.handleRegister = async function() {
     const regBtn = document.getElementById('register-btn');
@@ -190,7 +196,7 @@ window.handleLogout = function() {
     }
 }
 
-// --- SETUP APP (RETAINED + NEW CALLS) ---
+// --- SETUP APP ---
 async function setupApp(address) {
     try {
         const isRegistered = await contract.isRegistered(address);
@@ -208,11 +214,11 @@ async function setupApp(address) {
 
         if (path.includes('index1.html')) {
             setTimeout(() => fetchAllData(address), 300);
+            setTimeout(() => updateLiveMatrixStatus(), 500); // Live Matrix call added
         }
         if (path.includes('leadership.html')) {
             setTimeout(() => fetchLeadershipData(address), 300);
         }
-        // Naye logic yahan call honge
         if (path.includes('history.html')) {
             setTimeout(() => fetchUserHistory(address), 300);
         }
@@ -288,7 +294,7 @@ async function fetchLeadershipData(address) {
     } catch (err) { console.error("Leadership Error:", err); }
 }
 
-// --- NEW IMPLEMENTATIONS (HISTORY & TEAM) ---
+// --- HISTORY & TEAM ---
 
 async function fetchUserHistory(address) {
     try {
@@ -305,43 +311,46 @@ async function fetchUserHistory(address) {
         `).join('');
     } catch (e) { console.error(e); }
 }
+
+// --- LIVE MATRIX STATUS ---
+
 async function updateLiveMatrixStatus() {
     if (!window.contract) return;
 
     try {
-        // 1. Contract se saare counts ek saath mangwayein
         const magicCounts = await window.contract.getMagicPoolCounts();
         const clubCounts = await window.contract.getClubCounts();
         const gtCounts = await window.contract.getGTCounts();
 
-        // 2. MAGIC POOL RENDER (Stage 1 to 3 dikhane ke liye)
+        // Magic Stages: Target calculation according to mps1-6
         const magicStages = [
             { label: "Stage 1", count: magicCounts[0].toNumber(), target: 2 },
             { label: "Stage 2", count: magicCounts[1].toNumber(), target: 4 },
-            { label: "Stage 3", count: magicCounts[2].toNumber(), target: 8 }
+            { label: "Stage 3", count: magicCounts[2].toNumber(), target: 8 },
+            { label: "Stage 4", count: magicCounts[3].toNumber(), target: 16 },
+            { label: "Stage 5", count: magicCounts[4].toNumber(), target: 32 },
+            { label: "Stage 6", count: magicCounts[5].toNumber(), target: 64 }
         ];
         renderMatrixGroup('magic-pool-status', magicStages, 'blue');
 
-        // 3. CLUB POOL RENDER
         const clubStages = [
             { label: "Club 1", count: clubCounts[0].toNumber(), target: 2 },
-            { label: "Club 2", count: clubCounts[1].toNumber(), target: 2 }
+            { label: "Club 2", count: clubCounts[1].toNumber(), target: 2 },
+            { label: "Club 3", count: clubCounts[2].toNumber(), target: 2 },
+            { label: "Club 4", count: clubCounts[3].toNumber(), target: 2 }
         ];
         renderMatrixGroup('club-status', clubStages, 'yellow');
 
-        // 4. GT TABLE RENDER
         const gtStages = [
             { label: "GT 1", count: gtCounts[0].toNumber(), target: 2 },
-            { label: "GT 2", count: gtCounts[1].toNumber(), target: 2 }
+            { label: "GT 2", count: gtCounts[1].toNumber(), target: 2 },
+            { label: "GT 3", count: gtCounts[2].toNumber(), target: 2 }
         ];
         renderMatrixGroup('gt-status', gtStages, 'purple');
 
-    } catch (error) {
-        console.error("Live Matrix Update Error:", error);
-    }
+    } catch (error) { console.error("Live Matrix Update Error:", error); }
 }
 
-// UI Render Function
 function renderMatrixGroup(containerId, stages, colorTheme) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -354,11 +363,8 @@ function renderMatrixGroup(containerId, stages, colorTheme) {
     };
 
     stages.forEach(s => {
-        // Modulo logic: Kitne log current cycle mein hain
         let currentLevelFill = s.count % s.target;
-        // Agar full ho gaya toh 100% dikhane ke liye
         if (s.count > 0 && currentLevelFill === 0) currentLevelFill = s.target; 
-        
         const percentage = (currentLevelFill / s.target) * 100;
 
         html += `
@@ -371,14 +377,14 @@ function renderMatrixGroup(containerId, stages, colorTheme) {
                     <div class="h-full bg-gradient-to-r ${colors[colorTheme]} rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(255,255,255,0.1)]" 
                          style="width: ${percentage}%"></div>
                 </div>
-            </div>
-        `;
+            </div>`;
     });
     container.innerHTML = html;
 }
 
-// Har 15 seconds mein auto-refresh
+// Auto-refresh interval
 setInterval(updateLiveMatrixStatus, 15000);
+
 async function fetchLevelTeam(address) {
     try {
         const container = document.getElementById('level-team-data');
@@ -394,6 +400,7 @@ async function fetchLevelTeam(address) {
     } catch (e) { console.error(e); }
 }
 
+// --- UTILS ---
 const format = (val) => {
     try { return parseFloat(ethers.utils.formatUnits(val, 18)).toFixed(2); } 
     catch (e) { return "0.00"; }
@@ -410,9 +417,3 @@ function updateNavbar(addr) {
 }
 
 window.addEventListener('load', init);
-
-
-
-
-
-
