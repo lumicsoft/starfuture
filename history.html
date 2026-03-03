@@ -76,79 +76,93 @@
     <script src="web3-handler.js"></script>
 
     <script>
-        async function showHistory(category) {
-            const container = document.getElementById('history-container');
-            const buttons = document.querySelectorAll('.filter-btn');
-            
-            // UI Switch
-            buttons.forEach(btn => btn.classList.remove('active'));
-            const btnId = category === 'all' ? 'btn-all' : 'btn-' + category.toLowerCase();
-            if(document.getElementById(btnId)) document.getElementById(btnId).classList.add('active');
+       // --- Updated script section with Fixes ---
 
-            if (!window.contract || !window.userAddress) {
-                container.innerHTML = `<div class="text-center py-20 opacity-30 italic">Connect Wallet to View History</div>`;
-                return;
-            }
+async function showHistory(category) {
+    const container = document.getElementById('history-container');
+    const buttons = document.querySelectorAll('.filter-btn');
+    
+    // UI Switch
+    buttons.forEach(btn => btn.classList.remove('active'));
+    const btnId = category === 'all' ? 'btn-all' : 'btn-' + category.toLowerCase();
+    if(document.getElementById(btnId)) document.getElementById(btnId).classList.add('active');
 
-            try {
-                // Seedha contract se mapping data uthana
-                const rawLogs = await window.contract.getUserHistory(window.userAddress);
-                
-                if(!rawLogs || rawLogs.length === 0) {
-                    container.innerHTML = `<div class="text-center py-20 border border-dashed border-white/10 rounded-[40px]"><p class="text-gray-600 text-[10px] font-bold orbitron uppercase tracking-widest">No Transactions Found</p></div>`;
-                    return;
-                }
+    // Connection Check
+    if (!window.contract || !window.userAddress) {
+        console.log("Waiting for Web3 Connection...");
+        container.innerHTML = `<div class="text-center py-20 opacity-30 italic">Connect Wallet to View History</div>`;
+        return;
+    }
 
-                // Filtering Logic based on item.txType (Income, Withdrawal, Reward, etc.)
-                const filtered = rawLogs.filter(item => {
-                    if (category === 'all') return true;
-                    return item.txType.toLowerCase() === category.toLowerCase();
-                }).reverse(); // Latest First
+    try {
+        console.log("Fetching history for:", window.userAddress);
+        
+        // Use a safer way to call the contract
+        const rawLogs = await window.contract.getUserHistory(window.userAddress);
+        console.log("Raw Logs from Contract:", rawLogs); // Debugging line
 
-                if(filtered.length === 0) {
-                    container.innerHTML = `<div class="text-center py-20"><p class="text-gray-600 text-[10px] font-bold orbitron">No ${category} found</p></div>`;
-                    return;
-                }
-
-                let html = '';
-                filtered.forEach(item => {
-                    const amount = ethers.utils.formatEther(item.amount);
-                    const date = new Date(item.timestamp.toNumber() * 1000).toLocaleDateString();
-                    const time = new Date(item.timestamp.toNumber() * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    const type = item.txType.toLowerCase();
-
-                    html += `
-                    <div class="premium-card mb-2"> 
-                        <div class="history-inner">
-                            <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
-                                    <i data-lucide="${getIcon(type)}" class="w-4 h-4 ${type === 'withdrawal' ? 'text-red-500' : 'text-yellow-500'}"></i>
-                                </div>
-                                <div>
-                                    <p class="text-[10px] font-black orbitron text-white uppercase tracking-tighter">${item.txType}</p>
-                                    <p class="text-[9px] font-bold text-gray-500 mt-0.5 uppercase">${item.detail}</p>
-                                    <p class="text-[7px] text-gray-600 mt-0.5">${date} | ${time}</p>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-lg orbitron text-white font-black">
-                                    <span class="text-[10px] text-yellow-600 mr-0.5">$</span>${parseFloat(amount).toFixed(2)}
-                                </div>
-                                <p class="text-[7px] text-gray-700 font-bold uppercase tracking-widest">On-Chain</p>
-                            </div>
-                        </div>
-                    </div>`;
-                });
-
-                container.innerHTML = html;
-                lucide.createIcons();
-
-            } catch (err) {
-                console.error("History Error:", err);
-                container.innerHTML = `<div class="text-center py-20 text-red-800 text-[10px] orbitron">RPC ERROR: RETRYING...</div>`;
-                setTimeout(() => showHistory(category), 3000);
-            }
+        if(!rawLogs || rawLogs.length === 0) {
+            container.innerHTML = `<div class="text-center py-20 border border-dashed border-white/10 rounded-[40px]"><p class="text-gray-600 text-[10px] font-bold orbitron uppercase tracking-widest">No Transactions Found</p></div>`;
+            return;
         }
+
+        // Convert proxy to real array if needed and filter
+        const logsArray = [...rawLogs]; 
+        
+        const filtered = logsArray.filter(item => {
+            if (category === 'all') return true;
+            // Case-insensitive match for txType
+            return item.txType.toString().toLowerCase() === category.toLowerCase();
+        }).reverse(); 
+
+        if(filtered.length === 0) {
+            container.innerHTML = `<div class="text-center py-20"><p class="text-gray-600 text-[10px] font-bold orbitron uppercase tracking-widest">No ${category} found</p></div>`;
+            return;
+        }
+
+        let html = '';
+        filtered.forEach(item => {
+            // Safe formatting
+            const amount = ethers.utils.formatEther(item.amount);
+            const ts = item.timestamp.toNumber ? item.timestamp.toNumber() : Number(item.timestamp);
+            const dateObj = new Date(ts * 1000);
+            
+            const date = dateObj.toLocaleDateString();
+            const time = dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const typeLabel = item.txType.toString();
+            const typeClass = typeLabel.toLowerCase();
+
+            html += `
+            <div class="premium-card mb-4 transition-all hover:scale-[1.01]"> 
+                <div class="history-inner">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
+                            <i data-lucide="${getIcon(typeClass)}" class="w-4 h-4 ${typeClass === 'withdrawal' ? 'text-red-500' : 'text-yellow-500'}"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black orbitron text-white uppercase tracking-tighter">${typeLabel}</p>
+                            <p class="text-[9px] font-bold text-gray-500 mt-0.5 uppercase">${item.detail}</p>
+                            <p class="text-[7px] text-gray-600 mt-0.5">${date} | ${time}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-lg orbitron text-white font-black">
+                            <span class="text-[10px] text-yellow-600 mr-0.5">$</span>${parseFloat(amount).toFixed(2)}
+                        </div>
+                        <p class="text-[7px] text-gray-700 font-bold uppercase tracking-widest">Confirmed</p>
+                    </div>
+                </div>
+            </div>`;
+        });
+
+        container.innerHTML = html;
+        if(window.lucide) lucide.createIcons();
+
+    } catch (err) {
+        console.error("History Render Error:", err);
+        container.innerHTML = `<div class="text-center py-20 text-red-500 text-[10px] orbitron font-bold">BLOCKCHAIN ERROR: PLEASE REFRESH</div>`;
+    }
+}
 
         function getIcon(type) {
             if(type === 'income') return 'trending-up';
@@ -169,3 +183,4 @@
     </script>
 </body>
 </html>
+
