@@ -296,20 +296,20 @@ async function fetchAllData(address) {
 }
 async function fetchLeadershipData(address) {
     try {
+        const activeContract = window.contract || contract;
         // userStats indices: 0=directs, 1=team, 2=withdrawn
-        const directs = await contract.userStats(address, 0);
-        const team = await contract.userStats(address, 1);
-        const totalClaimed = await contract.userStats(address, 2);
-        const account = await contract.getUserAccountStats(address);
+        const directs = await activeContract.userStats(address, 0);
+        const team = await activeContract.userStats(address, 1);
+        const totalClaimed = await activeContract.userStats(address, 2);
+        const account = await activeContract.getUserAccountStats(address);
 
         updateText('current-team-count', team.toString());
         updateText('directs-count', directs.toString());
         updateText('rank-reward-claimed', format(totalClaimed));
-        updateText('available-balance-leader', format(account.availableBalance));
-        updateText('current-rank-display', account.currentClub);
-    } catch (err) { console.error(err); }
+        updateText('available-balance-leader', format(account[1])); // FIXED: Indexing
+        updateText('current-rank-display', account[0]);           // FIXED: Indexing
+    } catch (err) { console.error("Leadership Error:", err); }
 }
-
 const format = (val) => {
     try { return parseFloat(ethers.utils.formatUnits(val, 18)).toFixed(2); } 
     catch (e) { return "0.00"; }
@@ -326,3 +326,4 @@ function updateNavbar(addr) {
 }
 
 window.addEventListener('load', init);
+
