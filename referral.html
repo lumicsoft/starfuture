@@ -85,80 +85,66 @@
 <script>
     lucide.createIcons();
 
-    // Note: 'format' function yahan se hata diya hai kyunki woh web3-handler.js mein hai.
-
     async function loadTeamData() {
         // window.contract check
         if (!window.contract || !window.signer) {
-            console.log("Waiting for Web3...");
             setTimeout(loadTeamData, 1000);
             return;
         }
 
         try {
             const address = await window.signer.getAddress();
-            
-            // Stats Fetching (Using names from your ABI)
             const basic = await window.contract.getUserBasicStats(address);
             const matrix = await window.contract.getMatrixIncomeReport(address);
 
-            // UI Update - Hum window.format call karenge jo web3-handler se aa raha hai
-            if(document.getElementById('direct-count')) document.getElementById('direct-count').innerText = basic.directs.toString();
-            if(document.getElementById('team-count')) document.getElementById('team-count').innerText = basic.team.toString();
-            if(document.getElementById('total-earned')) document.getElementById('total-earned').innerText = window.format(basic.totalEarned);
-            if(document.getElementById('direct-earnings')) document.getElementById('direct-earnings').innerText = window.format(matrix.dMagic);
-            if(document.getElementById('level-earnings')) document.getElementById('level-earnings').innerText = window.format(matrix.c1);
+            // IDs match karein
+            if(document.getElementById('direct-count')) document.getElementById('direct-count').innerText = basic[1].toString();
+            if(document.getElementById('team-count')) document.getElementById('team-count').innerText = basic[0].toString();
+            
+            // Hum window.format use karenge jo aapke handler mein hai
+            if(document.getElementById('total-earned')) document.getElementById('total-earned').innerText = window.format(basic[2]);
+            if(document.getElementById('direct-earnings')) document.getElementById('direct-earnings').innerText = window.format(matrix[0]);
+            if(document.getElementById('level-earnings')) document.getElementById('level-earnings').innerText = window.format(matrix[1]);
 
             loadLevelMembers(1);
-
-        } catch (err) {
-            console.error("Team Data Load Error:", err);
-        }
+        } catch (err) { console.error(err); }
     }
 
     async function loadLevelMembers(level) {
         const tableBody = document.getElementById('team-table-body');
-        if(!tableBody) return;
-
-        tableBody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-yellow-500 orbitron animate-pulse">FETCHING LEVEL ${level}...</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-yellow-500 animate-pulse">LOADING...</td></tr>`;
         
         try {
             const address = await window.signer.getAddress();
             const members = await window.contract.getLevelTeam(address, level);
 
             if (!members || members.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-gray-600 py-20 italic uppercase">Level ${level} is Empty</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-gray-600 italic">EMPTY LEVEL</td></tr>`;
                 return;
             }
 
             let html = '';
             for (let mAddr of members) {
-                html += `
-                <tr class="border-b border-white/5">
-                    <td class="py-4 font-mono text-blue-400 text-xs">${mAddr.substring(0,12)}...${mAddr.substring(34)}</td>
+                html += `<tr>
+                    <td class="py-4 font-mono text-blue-400 text-xs">${mAddr.substring(0,10)}...</td>
                     <td class="text-gray-400 font-bold">Lvl ${level}</td>
                     <td class="text-white font-black">15.00</td>
                     <td class="text-gray-500">---</td>
-                    <td><span class="text-green-500 text-[10px] font-bold px-2 py-1 bg-green-500/5">ACTIVE</span></td>
-                    <td class="text-gray-500 font-mono text-[10px]">VERIFIED</td>
+                    <td><span class="text-green-500 text-[10px] font-bold">ACTIVE</span></td>
+                    <td class="text-gray-500 text-[10px]">VERIFIED</td>
                 </tr>`;
             }
             tableBody.innerHTML = html;
-        } catch (err) { 
-            tableBody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-red-500">Sync Error</td></tr>`; 
-        }
+        } catch (err) { console.error(err); }
     }
 
-    // Dropdown change function
-    window.loadLevelData = function(val) {
-        loadLevelMembers(val);
-    };
-
+    window.loadLevelData = (v) => loadLevelMembers(v);
     window.addEventListener('load', loadTeamData);
 </script>
 </body>
 
 
 </html>
+
 
 
