@@ -83,33 +83,35 @@
     <script>
         lucide.createIcons();
 
+       
+
         // 1. Initial Data Load
         async function loadTeamData() {
             // Check if web3 handler is ready
-            if (!window.contract || !window.signer) {
-                console.log("Waiting for contract...");
-                setTimeout(loadTeamData, 1000);
+            if (!window.contract || !window.userAddress) {
+                console.log("Waiting for contract and address...");
+                setTimeout(loadTeamData, 1000); // 1 second baad fir try karega
                 return;
             }
 
             try {
-                const address = await window.signer.getAddress();
+                const address = window.userAddress; // web3-handler se direct lein
                 
                 // Fetch stats from your ABI functions
                 const basic = await window.contract.getUserBasicStats(address);
                 const matrix = await window.contract.getMatrixIncomeReport(address);
 
                 // Update UI Cards
-                // basic: [team, directs, totalEarned]
                 if(document.getElementById('direct-count')) document.getElementById('direct-count').innerText = basic[1].toString();
                 if(document.getElementById('team-count')) document.getElementById('team-count').innerText = basic[0].toString();
                 
-                // Using window.format from web3-handler
                 if(document.getElementById('total-earned')) document.getElementById('total-earned').innerText = window.format(basic[2]);
                 if(document.getElementById('direct-earnings')) document.getElementById('direct-earnings').innerText = window.format(matrix[0]);
                 if(document.getElementById('level-earnings')) document.getElementById('level-earnings').innerText = window.format(matrix[1]);
 
-                // Default load level 1
+                // --- YEHA FIX HAI ---
+                // Jab basic stats load ho jayein, tab Level 1 load karo
+                console.log("Contract Ready. Loading Level 1 Team...");
                 loadLevelMembers(1);
 
             } catch (err) { 
@@ -119,13 +121,20 @@
 
         // 2. Fetch Members for Specific Level
         async function loadLevelMembers(level) {
+            // Safety Check: Agar contract load nahi hua toh wait karein
+            if (!window.contract) {
+                setTimeout(() => loadLevelMembers(level), 500);
+                return;
+            }
+
             const tableBody = document.getElementById('team-table-body');
             if(!tableBody) return;
 
             tableBody.innerHTML = `<tr><td colspan="5" class="p-10 text-center text-yellow-500 orbitron animate-pulse">SCANNING LEVEL ${level}...</td></tr>`;
             
             try {
-                const address = await window.signer.getAddress();
+                const address = window.userAddress;
+                // Aapke contract ka function: getLevelTeam(address, level)
                 const members = await window.contract.getLevelTeam(address, level);
 
                 if (!members || members.length === 0) {
@@ -134,6 +143,7 @@
                 }
 
                 let html = '';
+                // Aaj ki date dikhane ke liye
                 const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
                 for (let mAddr of members) {
@@ -158,11 +168,9 @@
             }
         }
 
-        // Global function for Select Dropdown
         window.loadLevelData = (v) => loadLevelMembers(v);
-
-        // Run on load
         window.addEventListener('load', loadTeamData);
     </script>
 </body>
 </html>
+
