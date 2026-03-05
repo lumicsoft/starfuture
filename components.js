@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 
                 <div class="hidden md:flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
                     <button onclick="location.href='index1.html'" class="px-4 py-2 rounded-lg text-[11px] font-bold orbitron uppercase transition-all ${path.includes('index1.html') ? 'bg-yellow-500 text-black' : 'text-gray-400 hover:text-white'}">Dashboard</button>
-                    <button onclick="location.href='deposits.html'" class="px-4 py-2 rounded-lg text-[11px] font-bold orbitron uppercase transition-all ${path.includes('deposits.html') ? 'bg-yellow-500 text-black' : 'text-gray-400 hover:text-white'}">Matrix</button>
+                    
                     <button onclick="location.href='referral.html'" class="px-4 py-2 rounded-lg text-[11px] font-bold orbitron uppercase transition-all ${path.includes('referral.html') ? 'bg-yellow-500 text-black' : 'text-gray-400 hover:text-white'}">Team</button>
                     <button onclick="location.href='leadership.html'" class="px-4 py-2 rounded-lg text-[11px] font-bold orbitron uppercase transition-all ${path.includes('leadership.html') ? 'bg-yellow-500 text-black' : 'text-gray-400 hover:text-white'}">Clubs</button>
                     <button onclick="location.href='history.html'" class="px-4 py-2 rounded-lg text-[11px] font-bold orbitron uppercase transition-all ${path.includes('history.html') ? 'bg-yellow-500 text-black' : 'text-gray-400 hover:text-white'}">History</button>
@@ -72,10 +72,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     <i data-lucide="layout-grid" class="w-5 h-5"></i>
                     <span class="text-[9px] font-bold orbitron uppercase tracking-wider">Home</span>
                 </a>
-                <a href="deposits.html" class="flex flex-col items-center gap-1.5 ${path.includes('deposits.html') ? 'text-yellow-500' : 'text-gray-500'}">
-                    <i data-lucide="component" class="w-5 h-5"></i>
-                    <span class="text-[9px] font-bold orbitron uppercase tracking-wider">Matrix</span>
-                </a>
+                
                 <a href="referral.html" class="flex flex-col items-center gap-1.5 ${path.includes('referral.html') ? 'text-yellow-500' : 'text-gray-500'}">
                     <i data-lucide="users-2" class="w-5 h-5"></i>
                     <span class="text-[9px] font-bold orbitron uppercase tracking-wider">Team</span>
@@ -108,3 +105,4 @@ window.toggleMobileMenu = function() {
         setTimeout(() => overlay.classList.add('hidden'), 300);
     }
 };
+
