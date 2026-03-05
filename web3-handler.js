@@ -378,84 +378,77 @@ async function fetchUserHistory(address, category = 'all') {
 window.showHistory = (cat) => fetchUserHistory(window.userAddress || localStorage.getItem('userAddress'), cat);
 
 async function updateLiveMatrixStatus() {
-    if (!window.contract) return;
+    if (!window.contract || !window.userAddress) return;
+
     try {
-        const magicCounts = await window.contract.getMagicPoolCounts();
-        const clubCounts = await window.contract.getClubCounts();
-        const gtCounts = await window.contract.getGTCounts();
+        // Contract se 21 stages ka personal data ek sath fetch karega
+        const allLevels = await window.contract.getGlobalLevelTracker(window.userAddress);
 
-        // --- MAGIC POOL (Normal 2, 4, 8, 16, 32, 64) ---
-        const magicStages = [
-            { label: "Stage 1", count: magicCounts[0].toNumber(), target: 2 },
-            { label: "Stage 2", count: magicCounts[1].toNumber(), target: 4 },
-            { label: "Stage 3", count: magicCounts[2].toNumber(), target: 8 },
-            { label: "Stage 4", count: magicCounts[3].toNumber(), target: 16 },
-            { label: "Stage 5", count: magicCounts[4].toNumber(), target: 32 },
-            { label: "Stage 6", count: magicCounts[5].toNumber(), target: 64 }
-        ];
-        renderMatrixGroup('magic-pool-status', magicStages, 'blue');
+        // --- 1. MAGIC POOL (Index 0 to 5) ---
+        const magicStages = allLevels.slice(0, 6).map(lvl => ({
+            label: lvl.stageName,
+            count: lvl.progress.toNumber(),
+            target: lvl.requiredForUser.toNumber(),
+            completed: lvl.isCompleted
+        }));
+        renderNewMatrixUI('magic-pool-status', magicStages, 'blue');
 
-        // --- ALL CLUBS (Har Club ki 3 Stages: 2, 4, 8) ---
-        const clubStages = [];
-        const clubNames = ["Club 1", "Club 2", "Club 3", "Club 4"];
-        
-        clubCounts.forEach((count, i) => {
-            const val = count.toNumber();
-            clubStages.push({ label: `${clubNames[i]} S1`, count: val, target: 2 });
-            clubStages.push({ label: `${clubNames[i]} S2`, count: val, target: 4 });
-            clubStages.push({ label: `${clubNames[i]} S3`, count: val, target: 8 });
-        });
-        renderMatrixGroup('club-status', clubStages, 'yellow');
+        // --- 2. ALL CLUBS (Index 6 to 17) ---
+        const clubStages = allLevels.slice(6, 18).map(lvl => ({
+            label: lvl.stageName,
+            count: lvl.progress.toNumber(),
+            target: lvl.requiredForUser.toNumber(),
+            completed: lvl.isCompleted
+        }));
+        renderNewMatrixUI('club-status', clubStages, 'yellow');
 
-        // --- ALL GT (Har GT ki 2 Stages: 2, 4) ---
-        const gtStages = [];
-        const gtNames = ["GT 1", "GT 2", "GT 3"];
+        // --- 3. ALL GT (Index 18 to 20) ---
+        const gtStages = allLevels.slice(18, 21).map(lvl => ({
+            label: lvl.stageName,
+            count: lvl.progress.toNumber(),
+            target: lvl.requiredForUser.toNumber(),
+            completed: lvl.isCompleted
+        }));
+        renderNewMatrixUI('gt-status', gtStages, 'purple');
 
-        gtCounts.forEach((count, i) => {
-            const val = count.toNumber();
-            gtStages.push({ label: `${gtNames[i]} S1`, count: val, target: 2 });
-            gtStages.push({ label: `${gtNames[i]} S2`, count: val, target: 4 });
-        });
-        renderMatrixGroup('gt-status', gtStages, 'purple');
-
-    } catch (error) { 
-        console.error("Live Matrix Update Error:", error); 
+    } catch (error) {
+        console.error("Personal Tracker Sync Error:", error);
     }
 }
 
-// Render function wahi rakha hai jo aapne diya tha
-function renderMatrixGroup(containerId, stages, colorTheme) {
+// Naya Render Function jo Level-wise data dikhayega
+function renderNewMatrixUI(containerId, stages, colorTheme) {
     const container = document.getElementById(containerId);
     if (!container) return;
+
     let html = '';
-    const colors = { 
-        blue: 'from-blue-600 to-cyan-400', 
-        yellow: 'from-yellow-600 to-orange-400', 
-        purple: 'from-purple-600 to-pink-400' 
+    const colors = {
+        blue: 'from-blue-600 to-cyan-400',
+        yellow: 'from-yellow-600 to-orange-400',
+        purple: 'from-purple-600 to-pink-400'
     };
 
     stages.forEach(s => {
-        let currentLevelFill = s.count % s.target;
-        // Agar target hit ho gaya (modulo 0), toh full bar (target) dikhao
-        if (s.count > 0 && currentLevelFill === 0) currentLevelFill = s.target; 
-        
-        const percentage = (currentLevelFill / s.target) * 100;
+        const percentage = (s.count / s.target) * 100;
+        const statusText = s.completed ? "COMPLETED" : `${s.count}/${s.target}`;
+        const barColor = s.completed ? "from-green-500 to-emerald-400" : colors[colorTheme];
+
         html += `
             <div class="mb-4">
                 <div class="flex justify-between text-[11px] orbitron mb-1">
                     <span class="text-gray-400 uppercase font-bold">${s.label}</span>
-                    <span class="text-white">${currentLevelFill}/${s.target}</span>
+                    <span class="${s.completed ? 'text-green-400' : 'text-white'} font-black">
+                        ${statusText}
+                    </span>
                 </div>
                 <div class="h-2 bg-white/5 rounded-full border border-white/10 p-[1px]">
-                    <div class="h-full bg-gradient-to-r ${colors[colorTheme]} rounded-full transition-all duration-1000" 
+                    <div class="h-full bg-gradient-to-r ${barColor} rounded-full transition-all duration-1000" 
                          style="width: ${percentage}%"></div>
                 </div>
             </div>`;
     });
     container.innerHTML = html;
 }
-
-setInterval(updateLiveMatrixStatus, 15000);
 
 async function fetchLevelTeam(address) {
     try {
@@ -488,6 +481,7 @@ function updateNavbar(addr) {
 }
 
 window.addEventListener('load', init);
+
 
 
 
