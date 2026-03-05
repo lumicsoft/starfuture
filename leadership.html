@@ -144,15 +144,15 @@
             }));
             renderSection('club-status', clubData);
 
-            // --- 3. GT TABLES (Index 18 to 20) ---
-            const gtData = allLevels.slice(18, 21).map(lvl => ({
-                label: lvl.stageName,
-                filled: lvl.progress.toNumber(),
-                total: lvl.requiredForUser.toNumber(),
-                color: 'pool-bar-purple',
-                isCompleted: lvl.isCompleted
-            }));
-            renderSection('gt-status', gtData);
+            // --- 3. ALL GT (Index 18 to 23) ---
+const gtStages = allLevels.slice(18, 24).map(lvl => ({
+    label: lvl.stageName,
+    filled: lvl.progress.toNumber(),
+    total: lvl.requiredForUser.toNumber(),
+    color: 'pool-bar-purple',
+    isCompleted: lvl.isCompleted
+}));
+renderSection('gt-status', gtStages);
 
             lucide.createIcons();
         } catch (e) {
@@ -201,4 +201,5 @@
     </script>
 </body>
 </html>
+
 
