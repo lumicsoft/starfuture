@@ -105,98 +105,95 @@
     <script src="web3-handler.js"></script>
 
     <script>
-        let lastDataHash = ""; 
+       let lastDataHash = ""; 
 
-        // Modulo logic: stage complete hone par 0 dikhane ke bajaye target dikhao
-        function calculateFilled(totalCount, matrixReq) {
-            if (!totalCount || totalCount == 0) return 0;
-            let current = totalCount % matrixReq;
-            return (current === 0) ? matrixReq : current; 
+    async function updateLiveUI() {
+        // Contract aur User Address check
+        if(!window.contract || !window.userAddress) {
+            console.log("Waiting for Wallet Connection...");
+            setTimeout(updateLiveUI, 2000);
+            return;
         }
+        
+        try {
+            // Humne web3-handler mein jo naya function banaya tha use call kar rahe hain
+            const allLevels = await window.contract.getGlobalLevelTracker(window.userAddress);
 
-        async function updateLiveUI() {
-            if(!window.contract) {
-                setTimeout(updateLiveUI, 2000);
-                return;
-            }
-            
-            try {
-                const [mCounts, cCounts, gCounts] = await Promise.all([
-                    window.contract.getMagicPoolCounts(),
-                    window.contract.getClubCounts(),
-                    window.contract.getGTCounts()
-                ]);
+            // Hash check taaki screen baar-baar reload na ho
+            const currentHash = JSON.stringify(allLevels.map(l => l.progress.toString() + l.isCompleted));
+            if (currentHash === lastDataHash) return; 
+            lastDataHash = currentHash;
 
-                const currentHash = JSON.stringify([...mCounts, ...cCounts, ...gCounts]);
-                if (currentHash === lastDataHash) return; 
-                lastDataHash = currentHash;
+            // --- 1. MAGIC POOL (Index 0 to 5) ---
+            const magicData = allLevels.slice(0, 6).map(lvl => ({
+                label: lvl.stageName,
+                filled: lvl.progress.toNumber(),
+                total: lvl.requiredForUser.toNumber(),
+                color: 'pool-bar-blue',
+                isCompleted: lvl.isCompleted
+            }));
+            renderSection('magic-pool-status', magicData);
 
-                // --- Magic Pool (Stage 1-6) ---
-                const magicData = [
-                    { label: 'STAGE 1', filled: calculateFilled(mCounts[0], 2), total: 2, color: 'pool-bar-blue' },
-                    { label: 'STAGE 2', filled: calculateFilled(mCounts[1], 4), total: 4, color: 'pool-bar-blue' },
-                    { label: 'STAGE 3', filled: calculateFilled(mCounts[2], 8), total: 8, color: 'pool-bar-blue' },
-                    { label: 'STAGE 4', filled: calculateFilled(mCounts[3], 16), total: 16, color: 'pool-bar-blue' },
-                    { label: 'STAGE 5', filled: calculateFilled(mCounts[4], 32), total: 32, color: 'pool-bar-blue' },
-                    { label: 'STAGE 6', filled: calculateFilled(mCounts[5], 64), total: 64, color: 'pool-bar-blue' }
-                ];
-                renderSection('magic-pool-status', magicData);
+            // --- 2. ROYALTY CLUBS (Index 6 to 17) ---
+            const clubData = allLevels.slice(6, 18).map(lvl => ({
+                label: lvl.stageName,
+                filled: lvl.progress.toNumber(),
+                total: lvl.requiredForUser.toNumber(),
+                color: 'pool-bar-gold',
+                isCompleted: lvl.isCompleted
+            }));
+            renderSection('club-status', clubData);
 
-                // --- Royalty Clubs (Har Club ki 3 sub-stages: 2, 4, 8) ---
-                const clubData = [];
-                const clubNames = ["CLUB 1", "CLUB 2", "CLUB 3", "CLUB 4"];
-                cCounts.forEach((count, i) => {
-                    const val = count.toNumber();
-                    clubData.push({ label: `${clubNames[i]} S1`, filled: calculateFilled(val, 2), total: 2, color: 'pool-bar-gold' });
-                    clubData.push({ label: `${clubNames[i]} S2`, filled: calculateFilled(val, 4), total: 4, color: 'pool-bar-gold' });
-                    clubData.push({ label: `${clubNames[i]} S3`, filled: calculateFilled(val, 8), total: 8, color: 'pool-bar-gold' });
-                });
-                renderSection('club-status', clubData);
+            // --- 3. GT TABLES (Index 18 to 20) ---
+            const gtData = allLevels.slice(18, 21).map(lvl => ({
+                label: lvl.stageName,
+                filled: lvl.progress.toNumber(),
+                total: lvl.requiredForUser.toNumber(),
+                color: 'pool-bar-purple',
+                isCompleted: lvl.isCompleted
+            }));
+            renderSection('gt-status', gtData);
 
-                // --- GT Tables (Har GT ki 2 sub-stages: 2, 4) ---
-                const gtData = [];
-                const gtNames = ["GT-1", "GT-2", "GT-3"];
-                gCounts.forEach((count, i) => {
-                    const val = count.toNumber();
-                    gtData.push({ label: `${gtNames[i]} S1`, filled: calculateFilled(val, 2), total: 2, color: 'pool-bar-purple' });
-                    gtData.push({ label: `${gtNames[i]} S2`, filled: calculateFilled(val, 4), total: 4, color: 'pool-bar-purple' });
-                });
-                renderSection('gt-status', gtData);
-
-                lucide.createIcons();
-            } catch (e) {
-                console.error("Matrix Sync Error:", e);
-            }
-            setTimeout(updateLiveUI, 10000);
+            lucide.createIcons();
+        } catch (e) {
+            console.error("Matrix Personal Sync Error:", e);
         }
+        // Har 10 second mein auto-update
+        setTimeout(updateLiveUI, 10000);
+    }
 
-        function renderSection(id, items) {
-            const container = document.getElementById(id);
-            if(!container) return;
-            container.innerHTML = items.map(item => {
-                const pct = (item.filled / item.total) * 100;
-                const remaining = item.total - item.filled;
-                const isComplete = remaining === 0;
+    function renderSection(id, items) {
+        const container = document.getElementById(id);
+        if(!container) return;
+        
+        container.innerHTML = items.map(item => {
+            const pct = (item.filled / item.total) * 100;
+            const remaining = item.total - item.filled;
+            const isDone = item.isCompleted;
 
-                return `
-                    <div class="space-y-2 mb-5 last:mb-0">
-                        <div class="flex justify-between items-end px-1">
-                            <span class="text-[9px] font-black orbitron text-gray-400 uppercase tracking-widest">${item.label}</span>
-                            <span class="text-[11px] font-bold orbitron text-white">${item.filled}<span class="text-gray-600">/${item.total}</span></span>
-                        </div>
-                        <div class="h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
-                            <div class="h-full rounded-full transition-all duration-1000 ${item.color}" style="width: ${pct}%"></div>
-                        </div>
-                        <div class="flex justify-between items-center px-0.5">
-                            <span class="text-[8px] font-bold italic ${isComplete ? 'text-green-500' : 'text-yellow-600'} uppercase">
-                                ${isComplete ? 'Cycle Done ✓' : remaining + ' Spots Left'}
-                            </span>
-                            <span class="text-[9px] font-black text-white/30">${Math.round(pct)}%</span>
-                        </div>
-                    </div>`;
-            }).join('');
-        }
+            // Color Logic: Agar completed hai toh Green, varna stage theme color
+            const barStyle = isDone ? 'bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.6)]' : item.color;
 
+            return `
+                <div class="space-y-2 mb-5 last:mb-0">
+                    <div class="flex justify-between items-end px-1">
+                        <span class="text-[10px] font-black orbitron ${isDone ? 'text-green-400' : 'text-gray-400'} uppercase tracking-widest">${item.label}</span>
+                        <span class="text-[11px] font-bold orbitron text-white">
+                            ${isDone ? item.total : item.filled}<span class="text-gray-600">/${item.total}</span>
+                        </span>
+                    </div>
+                    <div class="h-2 bg-white/5 rounded-full overflow-hidden border border-white/10 p-[1px]">
+                        <div class="h-full rounded-full transition-all duration-1000 ${barStyle}" style="width: ${isDone ? 100 : pct}%"></div>
+                    </div>
+                    <div class="flex justify-between items-center px-0.5">
+                        <span class="text-[8px] font-bold italic ${isDone ? 'text-green-400' : 'text-yellow-600'} uppercase">
+                            ${isDone ? '✓ STAGE COMPLETED' : '→ ' + remaining + ' MORE GLOBALLY NEEDED'}
+                        </span>
+                        <span class="text-[9px] font-black ${isDone ? 'text-green-500' : 'text-white/30'}">${isDone ? 100 : Math.round(pct)}%</span>
+                    </div>
+                </div>`;
+        }).join('');
+    }
         window.addEventListener('load', () => {
             lucide.createIcons();
             updateLiveUI();
@@ -204,3 +201,4 @@
     </script>
 </body>
 </html>
+
