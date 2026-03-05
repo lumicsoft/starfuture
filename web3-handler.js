@@ -37,7 +37,8 @@ const CONTRACT_ABI = [
     // NEW MATRIX SYNC FUNCTIONS
     "function getMagicPoolCounts() external view returns (uint256[6])",
     "function getClubCounts() external view returns (uint256[4])",
-    "function getGTCounts() external view returns (uint256[3])"
+    "function getGTCounts() external view returns (uint256[3])",
+    "function getGlobalLevelTracker(address _user) external view returns (tuple(string stageName, uint256 currentGlobalCount, uint256 userIndex, uint256 requiredForUser, uint256 progress, bool isCompleted)[])",
 ];
 
 const ERC20_ABI = ["function approve(address spender, uint256 amount) public returns (bool)", "function allowance(address owner, address spender) public view returns (uint256)"];
@@ -481,6 +482,7 @@ function updateNavbar(addr) {
 }
 
 window.addEventListener('load', init);
+
 
 
 
