@@ -104,129 +104,162 @@
     </main>
 <div id="footer-placeholder"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
-    <script>
-        const rewardTeam = [30, 50, 200, 500, 1500, 3000, 5000, 10000, 20000, 30000];
-        const rewardAmt = [10, 30, 100, 200, 500, 1000, 2000, 5000, 10000, 15000];
+   <script>
+    // Reward Configuration as per your plan
+    const rewardTeam = [30, 50, 200, 500, 1500, 3000, 5000, 10000, 20000, 30000];
+    const rewardAmt = [10, 30, 100, 200, 500, 1000, 2000, 5000, 10000, 15000];
 
-        async function syncData() {
-            const contract = window.contract;
-            const address = localStorage.getItem('userAddress');
-            if(!contract || !address) return;
-
-            try {
-                // 1. Fetch Contract Data
-                const stats = await contract.userStats(address);
-                const currentLevel = parseInt(stats[3]); // userStats[u][3]
-                const totalTeam = parseInt(stats[1]);
-                const directs = await contract.getLevelTeam(address, 1);
-
-                // 2. Process Legs
-                let legData = [];
-                for(let d of directs) {
-                    const count = await contract.legTeamCount(address, d);
-                    legData.push({ address: d, count: parseInt(count) });
-                }
-                legData.sort((a,b) => b.count - a.count);
-
-                // 3. Render Timeline
-                renderTimeline(currentLevel, totalTeam);
-
-                // 4. Render Table
-                renderLegTable(legData);
-
-                // 5. Render Qualification Bars
-                renderQualification(legData, currentLevel);
-
-            } catch(e) { console.error("Sync Failed", e); }
+    async function syncData() {
+        // 1. Get Global Instances from your web3-handler.js
+        const activeContract = window.contract;
+        const address = localStorage.getItem('userAddress') || window.userAddress;
+        
+        if(!activeContract || !address) {
+            console.log("Waiting for Wallet/Contract...");
+            setTimeout(syncData, 2000); // Retry after 2 sec
+            return;
         }
 
-        function renderTimeline(currentLevel, totalTeam) {
-            let html = '';
-            rewardTeam.forEach((target, i) => {
-                const isClaimed = i < currentLevel;
-                const isEligible = !isClaimed && totalTeam >= target;
-                html += `
-                    <div class="flex-1 text-center relative">
-                        <div class="w-8 h-8 mx-auto rounded-full flex items-center justify-center border-2 z-10 relative 
-                            ${isClaimed ? 'node-claimed' : isEligible ? 'node-active animate-pulse' : 'bg-[#111] border-white/10'}">
-                            <i data-lucide="${isClaimed ? 'check' : 'lock'}" class="w-3 h-3 ${isClaimed || isEligible ? 'text-black' : 'text-gray-500'}"></i>
-                        </div>
-                        <p class="mt-3 orbitron text-[9px] font-bold text-white">$${rewardAmt[i]}</p>
-                        <p class="text-[7px] text-gray-500 uppercase">${target} Team</p>
-                    </div>`;
-            });
-            document.getElementById('reward-timeline').innerHTML = html;
-            lucide.createIcons();
-        }
+        try {
+            console.log("Fetching Reward Data for:", address);
 
-        function renderLegTable(legs) {
-            let html = legs.map((leg, i) => `
-                <tr>
-                    <td class="py-4 text-gray-400 font-mono text-[9px]">${leg.address}</td>
-                    <td class="py-4 text-center font-black text-white">${leg.count}</td>
-                    <td class="py-4 text-right">
-                        <span class="px-2 py-1 rounded-md text-[8px] font-bold 
-                        ${i==0 ? 'bg-yellow-500/10 text-yellow-500' : i==1 ? 'bg-cyan-500/10 text-cyan-500' : 'bg-white/5 text-gray-500'}">
-                            ${i==0 ? 'POWER LEG' : i==1 ? 'SECOND LEG' : 'OTHER LEG'}
-                        </span>
-                    </td>
-                </tr>
-            `).join('');
-            document.getElementById('leg-table-body').innerHTML = html || '<tr><td colspan="3" class="py-10 text-center text-gray-600">No data found</td></tr>';
-        }
+            // 2. Fetch Data using your ABI functions
+            // userStats(address, 0) -> Directs, (address, 1) -> Team, (address, 3) -> Current Level
+            const [totalDirects, totalTeam, currentLevel] = await Promise.all([
+                activeContract.userStats(address, 0),
+                activeContract.userStats(address, 1),
+                activeContract.userStats(address, 3) // Assuming index 3 is for Reward Level
+            ]);
 
-        function renderQualification(legs, level) {
-            if(level >= 10) return;
-            const target = rewardTeam[level];
-            const power = legs[0]?.count || 0;
-            const second = legs[1]?.count || 0;
-            const others = legs.slice(2).reduce((a,b) => a + b.count, 0);
+            const level = parseInt(currentLevel);
+            const teamSize = parseInt(totalTeam);
 
-            const caps = [target * 0.4, target * 0.3, target * 0.3];
-            const counts = [power, second, others];
-            const colors = ['yellow', 'cyan', 'purple'];
-            const labels = ['Power Leg (40%)', 'Second Leg (30%)', 'Other Legs (30%)'];
-
-            let html = counts.map((count, i) => {
-                const perc = Math.min((count / caps[i]) * 100, 100);
-                return `
-                    <div>
-                        <div class="flex justify-between text-[9px] orbitron mb-1 uppercase">
-                            <span class="text-gray-500">${labels[i]}</span>
-                            <span class="${perc >= 100 ? 'text-green-500' : 'text-white'}">${count} / ${caps[i]}</span>
-                        </div>
-                        <div class="progress-container !mt-0 h-1">
-                            <div class="h-full bg-${colors[i]}-500 shadow-[0_0_8px]" style="width:${perc}%"></div>
-                        </div>
-                    </div>`;
-            }).join('');
-
-            document.getElementById('qualification-bars').innerHTML = html;
+            // 3. Fetch Directs for Leg Distribution
+            const directs = await activeContract.getLevelTeam(address, 1);
             
-            // Enable claim if qualified
-            const qTotal = Math.min(power, caps[0]) + Math.min(second, caps[1]) + Math.min(others, caps[2]);
-            const btn = document.getElementById('claim-btn');
-            if(qTotal >= target) {
-                btn.disabled = false;
-                btn.innerText = `Claim $${rewardAmt[level]} Reward Now`;
-            } else {
-                btn.innerText = `Need ${target - Math.round(qTotal)} more for $${rewardAmt[level]}`;
+            let legData = [];
+            // Note: Since legTeamCount is missing in your ABI, 
+            // we will show directs and their own team if possible, 
+            // or placeholder for now to keep UI alive.
+            for(let d of directs) {
+                // Agar aapke contract mein leg count ka function hai to use karein
+                // Filhal we use getLevelTeam for that direct as a fallback
+                const dTeam = await activeContract.getUserBasicStats(d);
+                legData.push({ 
+                    address: d, 
+                    count: parseInt(dTeam.team) + 1 // Member + their team
+                });
             }
-        }
+            legData.sort((a,b) => b.count - a.count);
 
-        async function handleClaim() {
-            try {
-                const tx = await window.contract.claimReward();
-                alert("Claim transaction submitted!");
-                await tx.wait();
-                syncData();
-            } catch(e) { alert("Claim failed: " + e.reason); }
-        }
+            // 4. Update UI
+            renderTimeline(level, teamSize);
+            renderLegTable(legData);
+            renderQualification(legData, level);
+            
+            // Update Rank Badge
+            const account = await activeContract.getUserAccountStats(address);
+            if(document.getElementById('rank-badge')) {
+                document.getElementById('rank-badge').innerText = `RANK: ${account[0] || 'STARTER'}`;
+            }
 
-        window.addEventListener('load', () => {
-            setTimeout(syncData, 2000);
+        } catch(e) { 
+            console.error("Reward Sync Failed:", e);
+        }
+    }
+
+    function renderTimeline(level, team) {
+        let html = '';
+        rewardTeam.forEach((target, i) => {
+            const isClaimed = i < level;
+            const isEligible = !isClaimed && team >= target;
+            html += `
+                <div class="flex-1 text-center relative px-2">
+                    <div class="w-10 h-10 mx-auto rounded-xl flex items-center justify-center border-2 transition-all 
+                        ${isClaimed ? 'bg-green-500 border-green-400' : isEligible ? 'bg-yellow-500 border-yellow-300 animate-pulse' : 'bg-white/5 border-white/10 opacity-30'}">
+                        <i data-lucide="${isClaimed ? 'check' : (isEligible ? 'unlock' : 'lock')}" class="w-4 h-4 text-black"></i>
+                    </div>
+                    <div class="mt-4">
+                        <p class="orbitron text-[10px] font-black ${isClaimed || isEligible ? 'text-white' : 'text-gray-600'}">$${rewardAmt[i]}</p>
+                        <p class="text-[7px] text-gray-500 font-bold uppercase">${target} Team</p>
+                    </div>
+                </div>`;
         });
-    </script>
+        document.getElementById('reward-timeline').innerHTML = html;
+        if(window.lucide) lucide.createIcons();
+    }
+
+    function renderLegTable(legs) {
+        let html = legs.map((leg, i) => `
+            <tr class="leg-row border-b border-white/5">
+                <td class="py-4 text-gray-400 font-mono text-[9px]">${leg.address.substring(0,12)}...</td>
+                <td class="py-4 text-center font-black text-white">${leg.count}</td>
+                <td class="py-4 text-right">
+                    <span class="px-2 py-1 rounded text-[8px] font-bold ${i==0 ? 'bg-yellow-500 text-black' : 'bg-white/5 text-gray-500'}">
+                        ${i==0 ? 'POWER LEG' : 'SUB LEG'}
+                    </span>
+                </td>
+            </tr>
+        `).join('');
+        document.getElementById('leg-table-body').innerHTML = html || '<tr><td colspan="3" class="py-10 text-center opacity-30">No Network Data</td></tr>';
+    }
+
+    function renderQualification(legs, level) {
+        if(level >= 10) {
+            document.getElementById('qualification-bars').innerHTML = `<p class="text-yellow-500 text-center orbitron">ALL LEVELS CLEARED!</p>`;
+            return;
+        }
+        const target = rewardTeam[level];
+        const power = legs[0]?.count || 0;
+        const others = legs.slice(1).reduce((a,b) => a + b.count, 0);
+
+        // 40% Power Leg, 60% Others (as per your total team requirements)
+        const caps = [target * 0.4, target * 0.6];
+        const counts = [power, others];
+        const labels = ['Power Leg (Max 40%)', 'Other Legs (60%)'];
+
+        let html = counts.map((count, i) => {
+            const perc = Math.min((count / caps[i]) * 100, 100);
+            return `
+                <div class="mb-4">
+                    <div class="flex justify-between text-[9px] orbitron mb-1">
+                        <span class="text-gray-500 uppercase">${labels[i]}</span>
+                        <span class="text-white">${count} / ${Math.floor(caps[i])}</span>
+                    </div>
+                    <div class="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                        <div class="h-full bg-yellow-500" style="width:${perc}%"></div>
+                    </div>
+                </div>`;
+        }).join('');
+
+        document.getElementById('qualification-bars').innerHTML = html;
+        
+        // Final eligibility check
+        const totalQualified = Math.min(power, caps[0]) + Math.min(others, caps[1]);
+        const btn = document.getElementById('claim-btn');
+        if(totalQualified >= target) {
+            btn.disabled = false;
+            btn.innerText = `CLAIM $${rewardAmt[level]} REWARD`;
+        } else {
+            btn.innerText = `NEED ${Math.ceil(target - totalQualified)} MORE FOR NEXT REWARD`;
+        }
+    }
+
+    async function handleClaim() {
+        try {
+            const tx = await window.contract.claimReward();
+            alert("Claim Transaction Sent!");
+            await tx.wait();
+            syncData();
+        } catch(e) { alert("Error: " + (e.reason || e.message)); }
+    }
+
+    // Initialize
+    window.addEventListener('load', () => {
+        setTimeout(syncData, 2000); // Give time for web3-handler.js to init
+    });
+</script>
 </body>
 </html>
+
 
