@@ -87,42 +87,66 @@ window.checkWalletSilently = async function() {
 // --- CORE LOGIC ---
 
 window.handleRegister = async function() {
-    const regBtn = document.getElementById('register-btn');
-    const refInput = document.getElementById('reg-referrer');
-    let referrer = refInput ? refInput.value.trim() : "";
-    if (!referrer || !ethers.utils.isAddress(referrer)) {
-        referrer = "0x0000000000000000000000000000000000000000";
-    }
+    const regBtn = document.getElementById('register-btn');
+    const refInput = document.getElementById('reg-referrer');
+    let referrer = refInput ? refInput.value.trim() : "";
+    
+    if (!referrer || !ethers.utils.isAddress(referrer)) {
+        referrer = "0x0000000000000000000000000000000000000000";
+    }
 
-    try {
-        const network = await provider.getNetwork();
-        if (network.chainId !== 97) {
-            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x61' }] });
-        }
+    try {
+        const network = await provider.getNetwork();
+        if (network.chainId !== 97) {
+            await window.ethereum.request({ 
+                method: 'wallet_switchEthereumChain', 
+                params: [{ chainId: '0x61' }] 
+            });
+        }
 
-        if(regBtn) { regBtn.disabled = true; regBtn.innerText = "CHECKING USDT..."; }
+        if(regBtn) { regBtn.disabled = true; regBtn.innerText = "CHECKING USDT..."; }
 
-        const usdtContract = new ethers.Contract(USDT_TOKEN_ADDRESS, ERC20_ABI, signer);
-        const feeWei = ethers.utils.parseUnits(REGISTRATION_FEE, 18);
-        const userAddr = await signer.getAddress();
-        const allowance = await usdtContract.allowance(userAddr, CONTRACT_ADDRESS);
-        
-        if (allowance.lt(feeWei)) {
-            if(regBtn) regBtn.innerText = "APPROVING USDT...";
-            const appTx = await usdtContract.approve(CONTRACT_ADDRESS, ethers.constants.MaxUint256);
-            await appTx.wait();
-        }
+        const usdtContract = new ethers.Contract(USDT_TOKEN_ADDRESS, ERC20_ABI, signer);
+        const feeWei = ethers.utils.parseUnits(REGISTRATION_FEE, 18);
+        const userAddr = await signer.getAddress();
+        const allowance = await usdtContract.allowance(userAddr, CONTRACT_ADDRESS);
+        
+        if (allowance.lt(feeWei)) {
+            if(regBtn) regBtn.innerText = "APPROVING USDT...";
+            const appTx = await usdtContract.approve(CONTRACT_ADDRESS, ethers.constants.MaxUint256);
+            await appTx.wait();
+        }
 
-        if(regBtn) regBtn.innerText = "CONFIRMING...";
-        const tx = await contract.register(referrer, { gasLimit: 800000 });
-        await tx.wait();
+        if(regBtn) regBtn.innerText = "ESTIMATING...";
 
-        alert("Account Activated Successfully!");
-        window.location.href = "index1.html";
-    } catch (err) {
-        alert("Registration Error: " + (err.reason || err.message));
-        if(regBtn) { regBtn.disabled = false; regBtn.innerText = "REGISTER NOW"; }
-    }
+        // --- DYNAMIC GAS LIMIT START ---
+        let gasLimit;
+        try {
+            // Blockchain se puchte hain kitni gas lagegi
+            const estimate = await contract.estimateGas.register(referrer);
+            // 20% extra buffer add kar rahe hain safety ke liye
+            gasLimit = estimate.mul(120).div(100);
+        } catch (e) {
+            console.log("Gas estimation failed, using fallback");
+            // Agar estimation fail ho jaye to high limit (1 Million) set kar dete hain
+            gasLimit = ethers.BigNumber.from("1000000");
+        }
+
+        if(regBtn) regBtn.innerText = "CONFIRMING...";
+        
+        // Ab yahan fixed 800000 ki jagah hamara calculated gasLimit jayega
+        const tx = await contract.register(referrer, { gasLimit });
+        // --- DYNAMIC GAS LIMIT END ---
+
+        await tx.wait();
+
+        alert("Account Activated Successfully!");
+        window.location.href = "index1.html";
+    } catch (err) {
+        console.error("Reg Error:", err);
+        alert("Registration Error: " + (err.reason || err.message));
+        if(regBtn) { regBtn.disabled = false; regBtn.innerText = "REGISTER NOW"; }
+    }
 };
 
 window.handleWithdraw = async function() {
@@ -482,6 +506,7 @@ function updateNavbar(addr) {
 }
 
 window.addEventListener('load', init);
+
 
 
 
